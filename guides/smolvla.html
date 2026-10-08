@@ -1,0 +1,310 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alicia-M：SmolVLA 复现与部署 · 智能物流系统北京市重点实验室</title><meta name="description" content="双相机采集、7 维数据清洗、20K 训练、模型下载与闭环推理。"><meta name="theme-color" content="#123c57"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="../assets/seal.webp" type="image/webp"><link rel="stylesheet" href="../assets/site.css"><script src="../assets/site.js" defer></script></head><body class="resource-body"><a class="skip" href="#main">跳到正文</a><div class="resource-header"><div class="institution"><div class="wrap"><span>北京物资学院 · 计算机与人工智能学院</span><span class="institution-en">BEIJING WUZI UNIVERSITY</span></div></div><header class="topbar"><div class="wrap"><a class="brand" href="../index.html"><img src="../assets/seal.webp" alt="北京物资学院" class="" fetchpriority="high" decoding="async"><span><strong>实验室资源库</strong><small>智能物流系统北京市重点实验室</small></span></a><button class="menu-toggle" aria-label="展开导航" aria-expanded="false" aria-controls="site-nav">菜单</button><nav class="nav" id="site-nav" aria-label="主导航"><a href="../index.html" class="">全部资源</a><a href="../index.html?category=机械臂与模仿学习" class="">复现手册</a><a href="../index.html?category=研究进展" class="">研究资料</a><a class="portal" href="../../lab/index.html">实验室主页</a></nav></div></header></div><main id="main" class="doc-layout"><article class="doc-article"><div class="doc-heading"><div class="breadcrumb"><a href="../index.html">资源库</a> / 机械臂与模仿学习</div><h1>Alicia-M：SmolVLA 复现与部署</h1><p>双相机采集、7 维数据清洗、20K 训练、模型下载与闭环推理。</p><div class="doc-meta"><span class="type-badge">复现手册</span><button class="print-button" data-print>打印 / 保存 PDF</button></div><div class="tags"><a href="../../lab/equipment/alicia.html" class="tag">Alicia-D / Alicia-M 示教与操作平台</a></div></div><div class="notice">来源：团队操作手册。用户名、服务器地址与 SSH 别名为通用示例，运行前替换为本机参数；流程未在本站逐项验证。</div><div class="article-content"><p><strong>Alicia-</strong><strong>M</strong><strong>_</strong><strong>SmolVLA</strong><strong><br></strong><strong>复现全流程操作手册</strong></p>
+<p>从数据采集、转换清洗、服务器训练到本机推理与迭代</p>
+<div class="table-scroll"><table><tr><th><p><strong>关键词</strong></p></th><th><p><strong>内容</strong></p></th></tr><tr><td><p><strong>任务对象</strong></p></td><td><p><strong>2.5 cm 彩色小方块抓取并放置到圆盘</strong></p></td></tr><tr><td><p><strong>机器人</strong></p></td><td><p><strong>玄雅 Alicia-M，6 关节 + 1 夹爪，单臂 7 维状态/动作</strong></p></td></tr><tr><td><p><strong>视觉输入</strong></p></td><td><p><strong>外部固定相机</strong><strong> </strong><strong>cam_right</strong><strong> + </strong><strong>腕部相机</strong><strong> </strong><strong>cam_wrist，两路</strong><strong> 640×480 / 30 FPS RGB</strong></p></td></tr><tr><td><p><strong>模型</strong></p></td><td><p><strong>SmolVLA，基于</strong><strong> SmolVLM2-500M-Video-Instruct 的 VLA </strong><strong>策略微调</strong></p></td></tr><tr><td><p><strong>训练服务器</strong></p></td><td><p><strong>Ubuntu </strong><strong>容器，RTX</strong><strong> 4090，LeRobot 0.6.0 / </strong><strong>smolvla</strong><strong> </strong><strong>环境</strong></p></td></tr><tr><td><p><strong>推理电脑</strong></p></td><td><p><strong>ThinkBook</strong><strong> 16 G7 </strong><strong>IAH，Ubuntu</strong><strong> 24.04，RTX 5060，smolvla_infer </strong><strong>环境</strong></p></td></tr></table></div>
+<div class="callout">新手主线：先按规范采集 2.5 cm 方块的完整抓取示范，再完成 20-step 冒烟训练和 20K 正式训练，最后固定使用 checkpoint/020000 做真机推理。每次实验前先检测相机编号；数据转换后必须检查 state/action 维度；训练使用 nohup 保持后台运行；推理时不要一次修改多个变量。</div>
+<h2 id="section-1">文档说明与目录</h2>
+<p>本手册将 SmolVLA 复现过程拆成“概念—本地采集—数据转换—服务器训练—模型下载—真机推理—评估迭代”七条主线。每一阶段都给出输入、命令、输出和合格标准，便于初学者按 2.5 cm 方块、20K 训练和 checkpoint/020000 的单一路线完成首次复现。</p>
+<div class="table-scroll"><table><tr><th><p><strong>章节</strong></p></th><th><p><strong>内容</strong></p></th></tr><tr><td><p><strong>1</strong></p></td><td><p><strong>项目目标与完整流程</strong></p></td></tr><tr><td><p><strong>2</strong></p></td><td><p><strong>基础概念：</strong><strong>SmolVLA</strong><strong>、VLA、动作块与闭环推理</strong></p></td></tr><tr><td><p><strong>3</strong></p></td><td><p><strong>设备、环境与路径约定</strong></p></td></tr><tr><td><p><strong>4</strong></p></td><td><p><strong>本地相机检测、采集前准备与 </strong><strong>SmolVLA</strong><strong> 代码实战</strong></p></td></tr><tr><td><p><strong>5</strong></p></td><td><p><strong>官方平台采集与数据集转换</strong></p></td></tr><tr><td><p><strong>6</strong></p></td><td><p><strong>14 维到 7 维数据清洗与质量检查</strong></p></td></tr><tr><td><p><strong>7</strong></p></td><td><p><strong>上传服务器与训练环境确认</strong></p></td></tr><tr><td><p><strong>8</strong></p></td><td><p><strong>SmolVLA</strong><strong> </strong><strong>训练、日志和</strong><strong> checkpoint </strong><strong>管理</strong></p></td></tr><tr><td><p><strong>9</strong></p></td><td><p><strong>模型下载与本机推理</strong></p></td></tr><tr><td><p><strong>10</strong></p></td><td><p><strong>动作顺滑、速度和夹爪参数调节</strong></p></td></tr><tr><td><p><strong>11</strong></p></td><td><p><strong>失败分析、补采策略与数据迭代</strong></p></td></tr><tr><td><p><strong>12</strong></p></td><td><p><strong>常见问题与故障排查</strong></p></td></tr><tr><td><p><strong>附录</strong></p></td><td><p><strong>完整命令速查</strong></p></td></tr></table></div>
+<h2 id="section-2">1. 项目目标与完整流程</h2>
+<p>本项目目标是在 Alicia-M 机械臂上复现 SmolVLA：使用双相机图像、机械臂当前状态和语言任务文本作为输入，让模型输出 7 维关节与夹爪动作，从而完成 2.5 cm 彩色小方块抓取并放置到圆盘的任务。</p>
+<div class="table-scroll"><table><tr><th><p><strong>阶段</strong></p></th><th><p><strong>输入</strong></p></th><th><p><strong>主要操作</strong></p></th><th><p><strong>输出</strong><strong>/</strong><strong>合格标准</strong></p></th></tr><tr><td><p><strong>1. </strong><strong>设备检测</strong></p></td><td><p><strong>外部相机、腕部相机、机械臂</strong></p></td><td><p><strong>检测</strong><strong> /dev/video*、</strong><strong>相机画面、GPU</strong><strong> </strong><strong>与环境</strong></p></td><td><p><strong>确认</strong><strong> CAM_RIGHT / </strong><strong>CAM_WRIST</strong><strong>；</strong></p><p><strong>Camera OK</strong></p></td></tr><tr><td><p><strong>2. </strong><strong>数据采集</strong></p></td><td><p><strong>人类示范、官方采集平台</strong></p></td><td><p><strong>采集</strong><strong> 150 </strong><strong>组或更多</strong><strong> </strong><strong>episodes</strong><strong>；</strong></p><p><strong>每条完整抓取</strong></p></td><td><p><strong>LeRobot</strong><strong> 转换产物或</strong></p><p><strong>平台转换产物</strong></p></td></tr><tr><td><p><strong>3. </strong><strong>数据清洗</strong></p></td><td><p><strong>CONVERT-v1 </strong><strong>数据集</strong></p></td><td><p><strong>检查</strong><strong> state/action </strong><strong>维度</strong><strong>；</strong></p><p><strong>14→7 </strong><strong>裁剪有效侧</strong></p></td><td><p><strong>SMOLVLA 7 </strong><strong>维数据集</strong></p></td></tr><tr><td><p><strong>4. </strong><strong>上传服务器</strong></p></td><td><p><strong>本地</strong><strong> SMOLVLA </strong><strong>数据集</strong></p></td><td><p><strong>rsync</strong><strong> </strong><strong>上传到</strong><strong> /workspace/</strong><strong>smolvla</strong><strong>/data</strong></p></td><td><p><strong>服务器可读取</strong></p><p><strong> parquet 与 videos</strong></p></td></tr><tr><td><p><strong>5. </strong><strong>模型训练</strong></p></td><td><p><strong>数据集</strong><strong> + smolvla_base_alicia_2cam</strong></p></td><td><p><strong>完成</strong><strong> 20K </strong><strong>离线监督训练</strong></p></td><td><p><strong>checkpoint/020000/</strong><strong>pretrained_model</strong></p></td></tr><tr><td><p><strong>6. </strong><strong>下载推理</strong></p></td><td><p><strong>pretrained_model</strong></p></td><td><p><strong>rsync</strong><strong> </strong><strong>下载到</strong></p><p><strong>本机</strong><strong> models </strong><strong>目录</strong></p></td><td><p><strong>本机</strong><strong> config </strong><strong>检查通过</strong></p></td></tr><tr><td><p><strong>7. </strong><strong>实机评估</strong></p></td><td><p><strong>实时双相机与机器人状态</strong></p></td><td><p><strong>smolvla_fast_live.py </strong><strong>闭环推理</strong></p></td><td><p><strong>记录成功率和失败阶段</strong></p></td></tr></table></div>
+<div class="callout">关键判断：SmolVLA 能动不等于任务成功。要分别判断“定位、接近、闭夹爪、抬升、搬运、放置”哪个阶段失败，再决定调参数还是补采数据。</div>
+<h2 id="section-3">2. 基础概念：SmolVLA、VLA、动作块与闭环推理</h2>
+<h3 id="section-4">2.1 SmolVLA 在本项目中的定位</h3>
+<p>SmolVLA 是一种视觉-语言-动作策略。它读取当前两路 RGB 图像、机器人 7 维状态和“抓取 2.5 cm 方块”的任务文本，然后预测未来一段 7 维动作序列。它不是传统轨迹播放器，也不是单步 PID 控制器，而是从示范数据中学习“当前观测下专家接下来会怎么动”。</p>
+<div class="table-scroll"><table><tr><th><p><strong>符号</strong><strong>/</strong><strong>字段</strong></p></th><th><p><strong>本项目含义</strong></p></th></tr><tr><td><p><strong>observation.images</strong><strong>.camera1</strong></p></td><td><p><strong>外部固定相机，由</strong><strong> </strong><strong>cam_right</strong><strong> rename </strong><strong>得到</strong></p></td></tr><tr><td><p><strong>observation.images</strong><strong>.camera2</strong></p></td><td><p><strong>腕部相机，由</strong><strong> </strong><strong>cam_wrist</strong><strong> rename </strong><strong>得到</strong></p></td></tr><tr><td><p><strong>observation.state</strong></p></td><td><p><strong>Alicia-M 当前 6 关节 + 1 夹爪，共 7 维</strong></p></td></tr><tr><td><p><strong>task</strong></p></td><td><p><strong>语言任务文本，语义为抓取 2.5 cm 方块</strong></p></td></tr><tr><td><p><strong>action</strong></p></td><td><p><strong>模型预测的 6 关节目标 + 夹爪目标，共 7 维</strong></p></td></tr></table></div>
+<h3 id="section-5">2.2 动作块与 REPLAN_EVERY</h3>
+<p>本项目 20K checkpoint 通常包含 chunk_size=50、n_action_steps=50。推理脚本中 REPLAN_EVERY=0 并不是不重规划，而是表示每次执行完整 50 个动作后再重新观察和推理。REPLAN_EVERY=8 则会只执行动作块前 8 步，丢弃后 42 步，容易造成频繁推理停顿或永远执行不到抓取动作块后半段。</p>
+<div class="table-scroll"><table><tr><th><p><strong>参数</strong></p></th><th><p><strong>实际行为</strong></p></th><th><p><strong>适用场景</strong></p></th></tr><tr><td><p><strong>REPLAN_EVERY=0</strong></p></td><td><p><strong>执行</strong><strong> 20K checkpoint </strong><strong>的完整</strong><strong> </strong><strong>n_action_steps，本项目为</strong><strong> 50 步</strong></p></td><td><p><strong>动作更连续，作为本手册默认推理设置</strong></p></td></tr><tr><td><p><strong>REPLAN_EVERY=8</strong></p></td><td><p><strong>每 8 步重新推理，后续动作被丢弃</strong></p></td><td><p><strong>需要高频纠偏时试验，但可能卡顿</strong></p></td></tr><tr><td><p><strong>REPLAN_EVERY=16/24</strong></p></td><td><p><strong>折中方案</strong></p></td><td><p><strong>若 50 步太开环、8 步太短，可后续试</strong></p></td></tr></table></div>
+<h3 id="section-6">2.3 训练与推理的区别</h3>
+<div class="table-scroll"><table><tr><th><p><strong>阶段</strong></p></th><th><p><strong>输入</strong></p></th><th><p><strong>模型输出</strong></p></th><th><p><strong>是否更新参数</strong></p></th><th><p><strong>风险</strong></p></th></tr><tr><td><p><strong>训练</strong></p></td><td><p><strong>数据集中的图像、</strong></p><p><strong>状态、任务、专家动作</strong></p></td><td><p><strong>预测动作，与专家动作算 loss</strong></p></td><td><p><strong>是</strong></p></td><td><p><strong>数据错位、维度错误、质量低会直接学坏</strong></p></td></tr><tr><td><p><strong>推理</strong></p></td><td><p><strong>实时相机、实时状态、任务文本</strong></p></td><td><p><strong>直接下发给 Alicia-M </strong></p><p><strong>的动作目标</strong></p></td><td><p><strong>否</strong></p></td><td><p><strong>场景偏移、动作不顺、夹爪时机错误</strong></p></td></tr></table></div>
+<h2 id="section-7">3. 设备、环境与路径约定</h2>
+<h3 id="section-8">3.1 硬件与软件</h3>
+<div class="table-scroll"><table><tr><th><p><strong>类别</strong></p></th><th><p><strong>本项目配置</strong></p></th></tr><tr><td><p><strong>机械臂</strong></p></td><td><p><strong>Alicia-M 单臂，6 关节 + 1 夹爪</strong></p></td></tr><tr><td><p><strong>外部相机</strong></p></td><td><p><strong>USB </strong><strong>相机，训练数据键为</strong><strong> </strong><strong>cam_right，推理映射为</strong><strong> camera1</strong></p></td></tr><tr><td><p><strong>腕部相机</strong></p></td><td><p><strong>机械臂腕部相机，训练数据键为</strong><strong> </strong><strong>cam_wrist，推理映射为</strong><strong> camera2</strong></p></td></tr><tr><td><p><strong>本机系统</strong></p></td><td><p><strong>Ubuntu 24.04，conda </strong><strong>环境</strong><strong> </strong><strong>smolvla_infer</strong><strong> / </strong><strong>lerobot</strong></p></td></tr><tr><td><p><strong>服务器系统</strong></p></td><td><p><strong>Ubuntu 24.04 </strong><strong>容器，conda</strong><strong> </strong><strong>环境</strong><strong> </strong><strong>smolvla，RTX</strong><strong> 4090</strong></p></td></tr><tr><td><p><strong>模型基座</strong></p></td><td><p><strong>/workspace/</strong><strong>smolvla</strong><strong>/models/smolvla_base_alicia_2cam</strong></p></td></tr></table></div>
+<h3 id="section-9">3.2 当前项目路径</h3>
+<div class="callout">命名说明：正文统一使用“2.5 cm 方块”。后续命令、任务字符串和已有目录仍保留项目早期技术标识，以确保脚本和路径能够直接运行，请勿自行改名。</div>
+<div class="table-scroll"><table><tr><th><p><strong>位置</strong></p></th><th><p><strong>用途</strong></p></th></tr><tr><td><p><strong>~/smolvla/inference/smolvla_fast_live.py</strong></p></td><td><p><strong>本机</strong><strong> </strong><strong>SmolVLA</strong><strong> </strong><strong>实机推理脚本</strong></p></td></tr><tr><td><p><strong>~/smolvla/tools/check_cameras.py</strong></p></td><td><p><strong>本机逐个查看相机画面的检测脚本</strong></p></td></tr><tr><td><p><strong>~/</strong><strong>pick_dataset</strong><strong>/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1</strong></p></td><td><p><strong>官方平台转换后的原始</strong><strong> </strong><strong>LeRobot</strong><strong> </strong><strong>数据集</strong></p></td></tr><tr><td><p><strong>~/</strong><strong>pick_dataset</strong><strong>/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA</strong></p></td><td><p><strong>清洗为 7 维后的 </strong><strong>SmolVLA</strong><strong> 训练数据集</strong></p></td></tr><tr><td><p><strong>/workspace/</strong><strong>smolvla</strong><strong>/data/pick_2.5b-LEROBOT-SMOLVLA</strong></p></td><td><p><strong>服务器训练数据路径</strong></p></td></tr><tr><td><p><strong>/workspace/</strong><strong>smolvla</strong><strong>/outputs/pick_2_5b_smolvla_20k</strong></p></td><td><p><strong>20K </strong><strong>训练输出目录</strong></p></td></tr><tr><td><p><strong>~/</strong><strong>smolvla</strong><strong>/models/pick_2.5b_20k</strong></p></td><td><p><strong>本机</strong><strong> 20K </strong><strong>推理模型目录</strong></p></td></tr></table></div>
+<h2 id="section-10">4. 本地相机检测与采集前准备</h2>
+<h3 id="section-11">4.1 进入推理环境</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer</code></pre></div>
+<h3 id="section-12">4.2 查看系统相机节点</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>ls -l /dev/video*
+v4l2-ctl --list-devices
+ls -l /dev/v4l/by-id/ 2&gt;/dev/null</code></pre></div>
+<h3 id="section-13">4.3 逐个查看相机画面</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>python ~/smolvla/tools/check_cameras.py
+按键说明：在自定义 check_cameras.py 中，任意键或空格查看下一个相机，q 退出全部检测。不要把这个行为和官方 camera_detection.py 混淆。</code></pre></div>
+<div class="table-scroll"><table><tr><th><p><strong>变量</strong></p></th><th><p><strong>含义</strong></p></th><th><p><strong>示例</strong></p></th></tr><tr><td><p><strong>CAM_RIGHT</strong></p></td><td><p><strong>外部固定相机，送入</strong><strong> </strong><strong>observation.images</strong><strong>.camera1</strong></p></td><td><p><strong>/dev/video4</strong></p></td></tr><tr><td><p><strong>CAM_WRIST</strong></p></td><td><p><strong>腕部相机，送入</strong><strong> </strong><strong>observation.images</strong><strong>.camera2</strong></p></td><td><p><strong>/dev/video10</strong></p></td></tr></table></div>
+<h3 id="section-14">4.4 腕部相机在官方平台不显示时的判断</h3>
+<p>如果 smolvla_fast_live.py 能用 /dev/video10 打开腕部相机并显示 Camera OK，说明 Linux UVC/V4L2 层已经识别相机。官方采集平台只显示外部相机时，优先排查平台枚举的 /dev/video 节点、相机格式和是否选到了 metadata 节点，而不是盲目安装驱动。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>v4l2-ctl -d /dev/video10 --all
+v4l2-ctl -d /dev/video10 --list-formats-ext
+for d in /dev/video*; do
+  echo &quot;========== $d ==========&quot;
+  v4l2-ctl -d &quot;$d&quot; --all 2&gt;/dev/null | grep -E &quot;Card type|Driver name|Video input&quot;
+done</code></pre></div>
+<h3 id="section-15">4.5 实战：SmolVLA 代码实战</h3>
+<p>本节把前面的设备检测与后续的数据转换、训练和推理串成一条可执行代码链。目标不是堆叠命令，而是让每一步都有明确输入、输出和合格标准；详细长命令仍以第 6—9 章为准。</p>
+<div class="callout">本节目标：完成环境可用性确认、2.5 cm 方块的 7 维数据集准备、推理脚本主流程理解、20K 训练与推理执行，以及 checkpoint/020000 结果的可复现实验记录。</div>
+<h4 id="section-16">4.5.1 环境配置</h4>
+<p>先固定 Python 环境、GPU、相机节点和项目路径。只有这些输入稳定，后续训练日志和真机结果才有可比性。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer
+python -c &quot;import torch; print(torch.__version__, torch.cuda.is_available())&quot;
+v4l2-ctl --list-devices
+python ~/smolvla/tools/check_cameras.py</code></pre></div>
+<div class="table-scroll"><table><tr><th><p><strong>检查项</strong></p></th><th><p><strong>合格标准</strong></p></th></tr><tr><td><p><strong>Python </strong><strong>环境</strong></p></td><td><p><strong>能够导入</strong><strong> torch 与 </strong><strong>lerobot；本机推理使用</strong><strong> </strong><strong>smolvla_infer</strong></p></td></tr><tr><td><p><strong>GPU</strong></p></td><td><p><strong>服务器</strong><strong> </strong><strong>torch.cuda.is_</strong><strong>available</strong><strong>(</strong><strong>) 为 </strong><strong>True；nvidia-smi</strong><strong> </strong><strong>可识别</strong><strong> GPU</strong></p></td></tr><tr><td><p><strong>双相机</strong></p></td><td><p><strong>外部相机与腕部相机均可打开，编号写入</strong><strong> CAM_RIGHT/CAM_WRIST</strong></p></td></tr><tr><td><p><strong>路径</strong></p></td><td><p><strong>MODEL_DIR、DATA_DIR </strong><strong>和输出目录均存在且可读写</strong></p></td></tr></table></div>
+<h4 id="section-17">4.5.2 数据集准备</h4>
+<p>训练前应把原始转换产物整理为 SmolVLA 可直接读取的 7 维数据集，并同时核对图像键、任务文本、帧数和 episode 边界。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>RAW=~/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1
+DATA=~/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA
+python -m json.tool &quot;$DATA/meta/info.json&quot; | less
+find &quot;$DATA/videos&quot; -type f -name &#x27;*.mp4&#x27; | sort | head</code></pre></div>
+<div class="table-scroll"><table><tr><th><p><strong>对象</strong></p></th><th><p><strong>必须确认</strong></p></th><th><p><strong>不合格时处理</strong></p></th></tr><tr><td><p><strong>meta/</strong><strong>info.json</strong></p></td><td><p><strong>episodes、frames、fps</strong><strong> </strong><strong>与实际文件一致</strong></p></td><td><p><strong>重新转换并复核统计量</strong></p></td></tr><tr><td><p><strong>state/action</strong></p></td><td><p><strong>每帧均为</strong><strong> [</strong><strong>7]，</strong><strong>无 None/</strong><strong>NaN</strong></p></td><td><p><strong>判断有效 7 维在左侧还是右侧后裁剪</strong></p></td></tr><tr><td><p><strong>图像键</strong></p></td><td><p><strong>cam_right、cam_wrist</strong><strong> </strong><strong>可映射为</strong><strong> camera1、camera2</strong></p></td><td><p><strong>修正</strong><strong> </strong><strong>rename_map，不改错原始数据</strong></p></td></tr><tr><td><p><strong>任务文本</strong></p></td><td><p><strong>tasks.parquet</strong><strong> </strong><strong>与推理</strong><strong> TASK </strong><strong>完全一致</strong></p></td><td><p><strong>统一任务字符串后再训练</strong></p></td></tr></table></div>
+<h4 id="section-18">4.5.3 核心代码讲解</h4>
+<p>smolvla_fast_live.py 的核心职责是把双相机图像、机器人 7 维状态和 TASK 组织成 observation，调用策略生成动作块，再经过限幅后下发给 Alicia-M。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>阅读提示：下面是逻辑示意，用于理解数据流；具体类名、函数名和参数以当前仓库脚本为准。
+policy = load_policy(MODEL_DIR)
+while step &lt; MAX_STEPS:
+    observation = build_observation(camera1, camera2, state7, TASK)
+    action_chunk = policy.select_action(observation)
+    for target7 in select_steps(action_chunk, REPLAN_EVERY):
+        safe_target7 = limit_joint_and_gripper_step(target7)
+        robot.send_target(safe_target7)
+        record(state7, target7, safe_target7)</code></pre></div>
+<div class="table-scroll"><table><tr><th><p><strong>代码对象</strong></p></th><th><p><strong>作用</strong></p></th><th><p><strong>关键检查</strong></p></th></tr><tr><td><p><strong>observation</strong></p></td><td><p><strong>组合</strong><strong> camera1、camera2、state7 和 TASK</strong></p></td><td><p><strong>字段名、形状和设备必须与</strong><strong> </strong><strong>config.json</strong><strong> </strong><strong>一致</strong></p></td></tr><tr><td><p><strong>action_chunk</strong></p></td><td><p><strong>一次预测未来</strong><strong> </strong><strong>n_action_steps</strong><strong> 个 7 </strong><strong>维目标</strong></p></td><td><p><strong>确认</strong><strong> </strong><strong>chunk_size</strong><strong> / </strong><strong>n_action_steps</strong><strong> 与 checkpoint </strong><strong>一致</strong></p></td></tr><tr><td><p><strong>REPLAN_EVERY</strong></p></td><td><p><strong>决定动作块执行多少步后重新观察</strong></p></td><td><p><strong>0 表示完整执行动作块；过小可能造成停顿</strong></p></td></tr><tr><td><p><strong>安全限幅</strong></p></td><td><p><strong>限制关节和夹爪单步变化</strong></p></td><td><p><strong>记录模型</strong><strong> target </strong><strong>与实际下发</strong><strong> target </strong><strong>的差异</strong></p></td></tr></table></div>
+<h4 id="section-19">4.5.4 训练与推理流程</h4>
+<p>训练与推理共用同一份字段定义，但输入来源和输出用途不同。先通过 20-step 冒烟训练确认数据与模型能跑通，再执行 20K 正式训练，下载 checkpoint/020000 并完成真机复现。对初学者而言，先把这条基线跑通比增加训练步数更重要。</p>
+<div class="table-scroll"><table><tr><th><p><strong>阶段</strong></p></th><th><p><strong>主要操作</strong></p></th><th><p><strong>输出</strong><strong>/</strong><strong>通过条件</strong></p></th></tr><tr><td><p><strong>冒烟训练</strong></p></td><td><p><strong>steps=20，检查 </strong><strong>batch、loss、显存和输出目录</strong></p></td><td><p><strong>产生</strong><strong> </strong><strong>checkpoint，日志无维度或</strong></p><p><strong>字段错误</strong></p></td></tr><tr><td><p><strong>正式训练</strong></p></td><td><p><strong>固定</strong><strong> DATA_DIR / </strong><strong>MODEL_DIR，后台运行</strong><strong> 20K</strong></p></td><td><p><strong>日志持续更新，按</strong><strong> </strong><strong>save_freq</strong><strong> </strong></p><p><strong>生成</strong><strong> checkpoint</strong></p></td></tr><tr><td><p><strong>模型下载</strong></p></td><td><p><strong>只下载指定</strong><strong> checkpoint 的 </strong><strong>pretrained_model</strong></p></td><td><p><strong>本机 </strong><strong>config.json</strong><strong> 可读取，</strong></p><p><strong>输入/输出均为 7 维</strong></p></td></tr><tr><td><p><strong>真机推理</strong></p></td><td><p><strong>固定相机、TASK</strong><strong> </strong><strong>和控制参数运行</strong><strong> smolvla_fast_live.py</strong></p></td><td><p><strong>Camera </strong><strong>OK，动作无</strong><strong> </strong><strong>NaN</strong><strong>，</strong></p><p><strong>过程可急停</strong></p></td></tr></table></div>
+<div class="callout">执行原则：首次复现固定使用 checkpoint/020000；CAM_RIGHT、CAM_WRIST、TASK、REPLAN_EVERY、速度与限幅参数保持不变。若结果异常，优先检查数据与执行链路，不要同时改变多个变量。</div>
+<h4 id="section-20">4.5.5 结果复现与可视化</h4>
+<p>结果复现聚焦 20K 模型。建议在相同相机、方块位置范围和控制参数下至少测试 10 次，逐次记录定位、闭爪、抬升、搬运和放置是否成功，并保存视频、日志与结构化汇总。这样更适合初学者判断问题来自采集、模型还是执行参数。</p>
+<div class="table-scroll"><table><tr><th><p><strong>评估项</strong></p></th><th><p><strong>记录方法</strong></p></th><th><p><strong>建议可视化</strong></p></th></tr><tr><td><p><strong>定位</strong></p></td><td><p><strong>是否到达方块上方、偏差方向</strong></p></td><td><p><strong>统计 20K 模型的定位成功率</strong></p></td></tr><tr><td><p><strong>抓取</strong></p></td><td><p><strong>闭爪时机、抓稳率、掉落阶段</strong></p></td><td><p><strong>成功</strong><strong>/</strong><strong>失败堆叠柱状图</strong></p></td></tr><tr><td><p><strong>稳定性</strong></p></td><td><p><strong>抖动、停顿、关节或夹爪跳变</strong></p></td><td><p><strong>state/action/target 第 7 </strong><strong>维时序曲线</strong></p></td></tr><tr><td><p><strong>轨迹</strong></p></td><td><p><strong>抬升、搬运和放置路径是否一致</strong></p></td><td><p><strong>同场景视频并排对比</strong></p></td></tr><tr><td><p><strong>泛化</strong></p></td><td><p><strong>更换方块位置后是否仍成功</strong></p></td><td><p><strong>位置分组成功率表</strong></p></td></tr></table></div>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>results/
+└── 020000/run_001.mp4, run_001.log, summary.csv
+合格标准：能够使用同一套输入与控制参数复现 20K 模型的实机结果；每次试验可追溯到 checkpoint/020000、视频、日志和失败阶段，并能据此决定调参还是补采数据。</code></pre></div>
+<h2 id="section-21">5. 官方平台采集与数据集转换</h2>
+<h3 id="section-22">5.1 数据采集原则</h3>
+<div class="table-scroll"><table><tr><th><p><strong>要求</strong></p></th><th><p><strong>说明</strong></p></th></tr><tr><td><p><strong>每条</strong><strong> episode </strong><strong>完整</strong></p></td><td><p><strong>从安全初始姿态开始，完成接近、闭爪、抬升、搬运、放置</strong></p></td></tr><tr><td><p><strong>失败立即重录</strong></p></td><td><p><strong>抓空、掉落、长时间犹豫、碰撞、画面缺失都不保留</strong></p></td></tr><tr><td><p><strong>桌面背景稳定</strong></p></td><td><p><strong>哑光中灰/浅蓝背景更好，避免强动态反光</strong></p></td></tr><tr><td><p><strong>夹爪动作明确</strong></p></td><td><p><strong>2.5 cm 硬质方块容错仍较低，闭爪后应短暂停留再垂直抬升</strong></p></td></tr><tr><td><p><strong>不要过多静止帧</strong></p></td><td><p><strong>动作前后不要录很久等待，否则模型容易学保持不动</strong></p></td></tr></table></div>
+<p><strong>采集数据集时注意事项：</strong></p>
+<p><img src="../assets/manual-smolvla-rId8.webp" alt="手册配图" loading="lazy"></p>
+<p><img src="../assets/manual-smolvla-rId9.webp" alt="手册配图" loading="lazy"></p>
+<h3 id="section-23">5.2 2.5 cm 方块正式数据集</h3>
+<div class="table-scroll"><table><tr><th><p><strong>数据集</strong></p></th><th><p><strong>episodes</strong></p></th><th><p><strong>frames</strong></p></th><th><p><strong>FPS</strong></p></th><th><p><strong>说明</strong></p></th></tr><tr><td><p><strong>2.5 cm 彩色方块</strong></p><p><strong>（正式主线）</strong></p></td><td><p><strong>150</strong></p></td><td><p><strong>49178</strong></p></td><td><p><strong>30</strong></p></td><td><p><strong>采用更规范的完整 episode 重新采集，20K 训练后真机抓取成功。早期 2.0 cm 数据的训练与推理未成功，仅用于复盘采集规范，不用于比较尺寸优劣。</strong></p></td></tr></table></div>
+<h3 id="section-24">5.3 转换产物位置</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1
+/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA
+注意：官方平台显示“转换成功”只说明生成了 LeRobot 格式文件，不代表 state/action 维度一定适合 SmolVLA。必须继续检查 meta/info.json 和 parquet。</code></pre></div>
+<h2 id="section-25">6. 14 维到 7 维数据清洗与质量检查</h2>
+<h3 id="section-26">6.1 检查 info.json</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>DATA=&quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1&quot;
+python3 - &lt;&lt;&#x27;PY&#x27;
+import json
+p = &quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1/meta/info.json&quot;
+with open(p, &quot;r&quot;, encoding=&quot;utf-8&quot;) as f:
+    x = json.load(f)
+print(&quot;episodes:&quot;, x[&quot;total_episodes&quot;])
+print(&quot;frames:&quot;, x[&quot;total_frames&quot;])
+print(&quot;fps:&quot;, x[&quot;fps&quot;])
+print(&quot;state:&quot;, x[&quot;features&quot;][&quot;observation.state&quot;][&quot;shape&quot;])
+print(&quot;action:&quot;, x[&quot;features&quot;][&quot;action&quot;][&quot;shape&quot;])
+for k in x[&quot;features&quot;]:
+    if k.startswith(&quot;observation.images.&quot;):
+        print(&quot;camera:&quot;, k)
+PY</code></pre></div>
+<h3 id="section-27">6.2 判断有效 7 维在左侧还是右侧</h3>
+<p>本项目遇到过两种 14 维模板：一种是前 7 维有效、后 7 维 None；另一种是前 7 维 None、后 7 维有效。不能直接写死取前 7 维，应先统计。</p>
+<div class="table-scroll"><table><tr><th><p><strong>情况</strong></p></th><th><p><strong>含义</strong></p></th><th><p><strong>处理</strong></p></th></tr><tr><td><p><strong>左7维有效，右7维全 None</strong></p></td><td><p><strong>有效</strong><strong> Alicia-M </strong><strong>数据在</strong><strong> 0~6</strong></p></td><td><p><strong>裁剪</strong><strong> </strong><strong>row[</strong><strong>:7]</strong></p></td></tr><tr><td><p><strong>左7维全 None，右7维有效</strong></p></td><td><p><strong>有效</strong><strong> Alicia-M </strong><strong>数据在</strong><strong> 7~13</strong></p></td><td><p><strong>裁剪</strong><strong> </strong><strong>row[</strong><strong>7:14]</strong></p></td></tr><tr><td><p><strong>两侧都有值或有部分</strong><strong> None</strong></p></td><td><p><strong>数据映射异常或采集错误</strong></p></td><td><p><strong>停止训练，检查转换器</strong></p><p><strong>与原始数据</strong></p></td></tr></table></div>
+<h3 id="section-28">6.3 生成 7 维 SMOLVLA 数据集</h3>
+<p>清洗脚本需要完成四件事：</p>
+<p>①复制原数据集、</p>
+<p>②把 parquet 中 observation.state/action 改为 7 维 list&lt;float32&gt;、</p>
+<p>③更新 meta/info.json、</p>
+<p>④重算 meta/stats.json。</p>
+<p>清洗后最终应看到 state=[7]、action=[7]、相机键仍为 observation.images.cam_right 与 observation.images.cam_wrist。</p>
+<div class="callout">合格标准：parquet 总行数与 meta/info.json total_frames 一致；所有 state/action 行长度为 7 且无 None/NaN；tasks.parquet 的任务文本与推理 TASK 保持一致。</div>
+<h2 id="section-29">7. 上传服务器与训练环境确认</h2>
+<h3 id="section-30">7.1 rsync 上传数据集</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>rsync -avh --info=progress2 \
+  -e &quot;ssh -p 6034&quot; \
+  &quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA/&quot; \
+  root@192.0.2.10:/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA/</code></pre></div>
+<h3 id="section-31">7.2 服务器检查数据集</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>ssh root@192.0.2.10 -p 6034
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate smolvla
+
+du -sh /workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA
+find /workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA -maxdepth 3 -type f | sort
+find /workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA/videos -type f -name &quot;*.mp4&quot;</code></pre></div>
+<h3 id="section-32">7.3 GPU 与缓存检查</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>nvidia-smi
+python - &lt;&lt;&#x27;PY&#x27;
+import torch
+print(torch.__version__)
+print(torch.cuda.is_available())
+print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else &quot;NO GPU&quot;)
+PY
+
+find /workspace/smolvla/hf_cache -maxdepth 3 -type d \
+  -name &#x27;models--HuggingFaceTB--SmolVLM2-500M-Video-Instruct&#x27; 2&gt;/dev/null
+NVML Unknown Error：如果 nvidia-smi 报 Failed to initialize NVML 且 torch.cuda.is_available() 为 False，通常是容器失去 GPU 访问；重新安装 PyTorch 无法解决，需要重启/重新挂载 GPU 容器并确认 /workspace 数据保留。</code></pre></div>
+<h2 id="section-33">8. SmolVLA 训练、日志和 checkpoint 管理</h2>
+<h3 id="section-34">8.1 20-step 冒烟训练</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>cd /workspace/smolvla/src/lerobot
+DATA_DIR=/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA
+MODEL_DIR=/workspace/smolvla/models/smolvla_base_alicia_2cam
+SMOKE_OUT=/workspace/smolvla/outputs/pick_2_5b_smoke20
+rm -rf &quot;$SMOKE_OUT&quot;
+
+export HF_HOME=/workspace/smolvla/hf_cache
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+
+lerobot-train \
+  --policy.path=&quot;$MODEL_DIR&quot; \
+  --dataset.repo_id=&quot;local/pick_2_5b_smolvla&quot; \
+  --dataset.root=&quot;$DATA_DIR&quot; \
+  --rename_map=&#x27;{&quot;observation.images.cam_right&quot;:&quot;observation.images.camera1&quot;,&quot;observation.images.cam_wrist&quot;:&quot;observation.images.camera2&quot;}&#x27; \
+  --batch_size=4 \
+  --steps=20 \
+  --output_dir=&quot;$SMOKE_OUT&quot; \
+  --job_name=&quot;pick_2_5b_smoke20&quot; \
+  --policy.device=cuda \
+  --policy.push_to_hub=false \
+  --wandb.enable=false \
+  --save_checkpoint=true \
+  --save_freq=20 \
+  --log_freq=1</code></pre></div>
+<h3 id="section-35">8.2 从头训练 20K</h3>
+<p>本手册以 20K 作为正式训练终点。规范采集的 2.5 cm 方块数据在 20K 后已经能够完成真机抓取；既有长时间训练实验出现了部分过拟合，因此 100K 不再作为本手册的操作路线。初学者应先稳定复现 checkpoint/020000，再根据新增数据和实机失败类型决定是否继续训练。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>cd /workspace/smolvla/src/lerobot
+DATA_DIR=/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA
+MODEL_DIR=/workspace/smolvla/models/smolvla_base_alicia_2cam
+OUT_DIR=/workspace/smolvla/outputs/pick_2_5b_smolvla_20k
+LOG_DIR=/workspace/smolvla/logs
+LOG_FILE=$LOG_DIR/pick_2_5b_smolvla_20k.log
+PID_FILE=$LOG_DIR/pick_2_5b_smolvla_20k.pid
+mkdir -p &quot;$LOG_DIR&quot;
+rm -rf &quot;$OUT_DIR&quot;
+
+export HF_HOME=/workspace/smolvla/hf_cache
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+
+nohup /workspace/miniforge3/envs/smolvla/bin/lerobot-train \
+  --policy.path=&quot;$MODEL_DIR&quot; \
+  --dataset.repo_id=&quot;local/pick_2_5b_smolvla_20k&quot; \
+  --dataset.root=&quot;$DATA_DIR&quot; \
+  --rename_map=&#x27;{&quot;observation.images.cam_right&quot;:&quot;observation.images.camera1&quot;,&quot;observation.images.cam_wrist&quot;:&quot;observation.images.camera2&quot;}&#x27; \
+  --batch_size=4 \
+  --steps=20000 \
+  --output_dir=&quot;$OUT_DIR&quot; \
+  --job_name=&quot;pick_2_5b_smolvla_20k&quot; \
+  --policy.device=cuda \
+  --policy.push_to_hub=false \
+  --wandb.enable=false \
+  --save_checkpoint=true \
+  --save_freq=10000 \
+  --log_freq=10 \
+  &gt; &quot;$LOG_FILE&quot; 2&gt;&amp;1 &lt; /dev/null &amp;
+
+echo $! &gt; &quot;$PID_FILE&quot;</code></pre></div>
+<h3 id="section-36">8.3 训练监控</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>tail -f /workspace/smolvla/logs/pick_2_5b_smolvla_20k.log
+ps -fp $(cat /workspace/smolvla/logs/pick_2_5b_smolvla_20k.pid)
+watch -n 2 nvidia-smi</code></pre></div>
+<div class="table-scroll"><table><tr><th><p><strong>日志字段</strong></p></th><th><p><strong>含义</strong></p></th></tr><tr><td><p><strong>step</strong></p></td><td><p><strong>参数更新步数；20K 表示 20000 步</strong></p></td></tr><tr><td><p><strong>smpl</strong></p></td><td><p><strong>累计训练样本数，约为</strong><strong> step × </strong><strong>batch_size</strong></p></td></tr><tr><td><p><strong>epch</strong></p></td><td><p><strong>相当于遍历数据集的轮数</strong></p></td></tr><tr><td><p><strong>loss</strong></p></td><td><p><strong>动作预测误差，不能单独代表实机成功率</strong></p></td></tr><tr><td><p><strong>grdn</strong></p></td><td><p><strong>梯度范数，观察是否异常</strong></p></td></tr><tr><td><p><strong>lr</strong></p></td><td><p><strong>学习率；在 20K 训练期间观察变化是否符合当前配置</strong></p></td></tr><tr><td><p><strong>mem_gb</strong></p></td><td><p><strong>训练显存占用；占不满 4090 不代表训练无效</strong></p></td></tr></table></div>
+<h3 id="section-37">8.4 20K checkpoint 目录</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>find /workspace/smolvla/outputs/pick_2_5b_smolvla_20k/checkpoints \
+  -maxdepth 2 -type d | sort
+本手册主线推理使用 checkpoints/020000/pretrained_model；training_state 仅用于续训。下载到本机时只需复制 020000 下的 pretrained_model。</code></pre></div>
+<h2 id="section-38">9. 模型下载与本机推理</h2>
+<h3 id="section-39">9.1 下载 20K checkpoint</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>mkdir -p &quot;$HOME/smolvla/models/pick_2.5b_20k&quot;
+rsync -avh --info=progress2 \
+  -e &quot;ssh -p 6034&quot; \
+  root@192.0.2.10:/workspace/smolvla/outputs/pick_2_5b_smolvla_20k/checkpoints/020000/pretrained_model/ \
+  &quot;$HOME/smolvla/models/pick_2.5b_20k/&quot;</code></pre></div>
+<h3 id="section-40">9.2 检查模型结构</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer
+python - &lt;&lt;&#x27;PY&#x27;
+import json
+p = &quot;/home/labuser/smolvla/models/pick_2.5b_20k/config.json&quot;
+with open(p) as f:
+    x = json.load(f)
+print(&quot;input_features:&quot;)
+for k,v in x[&quot;input_features&quot;].items(): print(k, v)
+print(&quot;output_features:&quot;)
+for k,v in x[&quot;output_features&quot;].items(): print(k, v)
+print(&quot;chunk_size:&quot;, x.get(&quot;chunk_size&quot;))
+print(&quot;n_action_steps:&quot;, x.get(&quot;n_action_steps&quot;))
+print(&quot;empty_cameras:&quot;, x.get(&quot;empty_cameras&quot;))
+PY</code></pre></div>
+<h3 id="section-41">9.3 实机推理命令</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy
+
+HF_HUB_OFFLINE=1 \
+TRANSFORMERS_OFFLINE=1 \
+MODEL_DIR=&quot;$HOME/smolvla/models/pick_2.5b_20k&quot; \
+TASK=&quot;pick 2.5b&quot; \
+CAM_RIGHT=/dev/video4 \
+CAM_WRIST=/dev/video10 \
+ACTION_MODE=absolute \
+REPLAN_EVERY=0 \
+MAX_STEPS=1000 \
+MAX_JOINT_STEP=0.02 \
+JOINT_SPEED=7 \
+GRIPPER_SPEED=30 \
+CONTROL_HZ=30 \
+LOG_EVERY=10 \
+python ~/smolvla/inference/smolvla_fast_live.py
+代理问题：若报 Unknown scheme for proxy URL socks://127.0.0.1:7897，先 unset 代理并打开 HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE。QFontDatabase 字体警告不影响推理。</code></pre></div>
+<h2 id="section-42">10. 动作顺滑、速度和夹爪参数调节</h2>
+<div class="table-scroll"><table><tr><th><p><strong>参数</strong></p></th><th><p><strong>主要作用</strong></p></th><th><p><strong>建议</strong></p></th></tr><tr><td><p><strong>REPLAN_EVERY</strong></p></td><td><p><strong>动作块重规划频率；过小会频繁推理停顿</strong></p></td><td><p><strong>先用</strong><strong> 0，即完整执行 50 步</strong></p></td></tr><tr><td><p><strong>MAX_JOINT_STEP</strong></p></td><td><p><strong>每个控制周期关节目标最大变化</strong></p></td><td><p><strong>0.015 更柔，0.02 更快，0.03 </strong><strong>更激进</strong></p></td></tr><tr><td><p><strong>JOINT_SPEED</strong></p></td><td><p><strong>底层机械臂追踪目标速度</strong></p></td><td><p><strong>5 稳定，7/8 更快但可能更冲</strong></p></td></tr><tr><td><p><strong>GRIPPER_SPEED</strong></p></td><td><p><strong>夹爪开合速度</strong></p></td><td><p><strong>夹爪闭合慢再从</strong><strong> 30 </strong><strong>提到</strong><strong> 40/50</strong></p></td></tr><tr><td><p><strong>CONTROL_HZ</strong></p></td><td><p><strong>控制循环频率</strong></p></td><td><p><strong>保持 30，与数据 FPS 一致</strong></p></td></tr><tr><td><p><strong>ACTION_MODE</strong></p></td><td><p><strong>absolute/delta </strong><strong>动作解释</strong></p></td><td><p><strong>本项目保持</strong><strong> absolute</strong></p></td></tr></table></div>
+<div class="callout">调参原则：想更顺，先降 MAX_JOINT_STEP 或降低 JOINT_SPEED；想更快，先提升 JOINT_SPEED，再小幅提升 MAX_JOINT_STEP。首次复现应保持 20K 模型不变，每次只调整一个控制参数并记录结果。</div>
+<h3 id="section-43">10.1 推荐对比档位</h3>
+<div class="table-scroll"><table><tr><th><p><strong>目标</strong></p></th><th><p><strong>参数组合</strong></p></th></tr><tr><td><p><strong>稳定基线</strong></p></td><td><p><strong>MAX_JOINT_STEP=0.02, JOINT_SPEED=7</strong></p></td></tr><tr><td><p><strong>更柔和</strong></p></td><td><p><strong>MAX_JOINT_STEP=0.015, JOINT_SPEED=5</strong></p></td></tr><tr><td><p><strong>更快但仍较稳</strong></p></td><td><p><strong>MAX_JOINT_STEP=0.015, JOINT_SPEED=7/8</strong></p></td></tr><tr><td><p><strong>更快测试</strong></p></td><td><p><strong>MAX_JOINT_STEP=0.018~0.02, JOINT_SPEED=8</strong></p></td></tr></table></div>
+<h2 id="section-44">11. 失败分析、补采策略与数据迭代</h2>
+<h3 id="section-45">11.1 失败阶段记录表</h3>
+<div class="table-scroll"><table><tr><th><p><strong>阶段</strong></p></th><th><p><strong>记录内容</strong></p></th><th><p><strong>可能原因</strong></p></th><th><p><strong>优先处理</strong></p></th></tr><tr><td><p><strong>寻找</strong></p></td><td><p><strong>是否朝方块方向移动</strong></p></td><td><p><strong>相机错位、数据覆盖不足</strong></p></td><td><p><strong>检查</strong><strong> CAM_RIGHT/CAM_WRIST </strong></p><p><strong>与任务文本</strong></p></td></tr><tr><td><p><strong>接近</strong></p></td><td><p><strong>是否到方块上方</strong></p></td><td><p><strong>训练位置单一或目标过小</strong></p></td><td><p><strong>补采不同位置、不同起始姿态</strong></p></td></tr><tr><td><p><strong>夹取</strong></p></td><td><p><strong>夹爪是否主动闭合</strong></p></td><td><p><strong>gripper action </strong><strong>学得少或时机错</strong></p></td><td><p><strong>LOG_EVERY=1 </strong><strong>分析</strong><strong> </strong><strong>action[6]，</strong></p><p><strong>补采闭合示范</strong></p></td></tr><tr><td><p><strong>抬升</strong></p></td><td><p><strong>夹住后是否掉落</strong></p></td><td><p><strong>硬质方块抖动、夹持不足</strong></p></td><td><p><strong>闭爪后短暂停留，</strong></p><p><strong>垂直抬升再横移</strong></p></td></tr><tr><td><p><strong>搬运</strong></p></td><td><p><strong>路径是否抖或偏离</strong></p></td><td><p><strong>动作块执行不稳或安全限幅</strong></p></td><td><p><strong>调整速度/步长，</strong></p><p><strong>补采稳定运输</strong></p></td></tr><tr><td><p><strong>放置</strong></p></td><td><p><strong>是否到圆盘并松爪</strong></p></td><td><p><strong>圆盘位置覆盖不足</strong></p></td><td><p><strong>补采不同圆盘位置和松爪时机</strong></p></td></tr></table></div>
+<h3 id="section-46">11.2 大批量数据采集建议</h3>
+<p>如果桌面放 10 个小方块，不建议把连续抓 10 个记录为一个超长 episode。更推荐每个 episode 对应一次完整抓取，场景里可以有干扰物，但每条只抓一个明确目标。这样 200 轮 × 10 个目标可形成约 2000 条独立抓取示范，显著增加闭夹爪与稳定抬升样本。</p>
+<div class="table-scroll"><table><tr><th><p><strong>做法</strong></p></th><th><p><strong>优点</strong></p></th><th><p><strong>风险</strong></p></th></tr><tr><td><p><strong>200 </strong><strong>个超长</strong><strong> </strong><strong>episode</strong><strong>，每条抓</strong><strong> 10 个</strong></p></td><td><p><strong>看似采集省事</strong></p></td><td><p><strong>模型需要记住第几个目标，</strong></p><p><strong>多解性强，长时序难学</strong></p></td></tr><tr><td><p><strong>约 2000 </strong><strong>个短</strong><strong> </strong><strong>episode，每条抓</strong><strong> 1 个</strong></p></td><td><p><strong>任务边界清晰，夹爪事件多</strong><strong>，</strong></p><p><strong>适合单次</strong><strong> pick-and-place</strong></p></td><td><p><strong>采集管理更麻烦，但训练更稳定</strong></p></td></tr></table></div>
+<div class="callout">采集质量比盲目增加训练步数更重要：规范采集后，20K 模型已经能完成 2.5 cm 方块的抓取与放置。若闭爪、抓稳或抬升仍不稳定，应优先补充相应阶段的高质量示范，而不是直接延长训练。</div>
+<h2 id="section-47">12. 常见问题与故障排查</h2>
+<div class="table-scroll"><table><tr><th><p><strong>现象</strong></p></th><th><p><strong>原因</strong></p></th><th><p><strong>处理</strong></p></th></tr><tr><td><p><strong>QFontDatabase</strong><strong> </strong><strong>警告</strong></p></td><td><p><strong>OpenCV Qt </strong><strong>窗口找不到字体目录</strong></p></td><td><p><strong>忽略，不影响模型/相机/机械臂</strong></p></td></tr><tr><td><p><strong>Unknown scheme for proxy URL socks://127.0.0.1:7897</strong></p></td><td><p><strong>代理变量被 </strong><strong>httpx</strong><strong> 读取</strong></p><p><strong>且格式不兼容</strong></p></td><td><p><strong>unset </strong><strong>所有</strong><strong> </strong><strong>proxy，设置</strong><strong> HF_HUB_OFFLINE=1</strong></p></td></tr><tr><td><p><strong>LocalEntryNotFoundError</strong><strong> </strong></p><p><strong>离线找不到</strong><strong> SmolVLM2</strong></p></td><td><p><strong>未设置</strong><strong> HF_HOME 或</strong></p><p><strong>缓存路径不对</strong></p></td><td><p><strong>export HF_HOME=/workspace/</strong><strong>smolvla</strong><strong>/</strong><strong>hf_cache</strong></p></td></tr><tr><td><p><strong>Feature mismatch：camera3/</strong><strong>empty_camera</strong></p></td><td><p><strong>加载了错误模型或</strong></p><p><strong>验证</strong><strong> raw observation </strong><strong>太严格</strong></p></td><td><p><strong>检查</strong><strong> MODEL_DIR/</strong><strong>config.json</strong><strong>；</strong></p><p><strong>不要用旧</strong><strong> </strong><strong>pretrained_model</strong></p></td></tr><tr><td><p><strong>state/action 为 14 维</strong></p></td><td><p><strong>平台转换用双臂模板</strong></p></td><td><p><strong>检查有效侧后裁剪为 7 维并重算 stats</strong></p></td></tr><tr><td><p><strong>腕部相机平台不显示</strong></p></td><td><p><strong>平台枚举节点或格式问题</strong></p></td><td><p><strong>用 v4l2-ctl 和 check_cameras.py </strong></p><p><strong>确认真实节点</strong></p></td></tr><tr><td><p><strong>NVML Unknown Error</strong></p></td><td><p><strong>容器失去</strong><strong> GPU </strong><strong>访问</strong></p></td><td><p><strong>重启</strong><strong>/</strong><strong>重新挂载</strong><strong> GPU </strong><strong>容器</strong><strong>，</strong></p><p><strong>不要重装</strong><strong> </strong><strong>PyTorch</strong></p></td></tr><tr><td><p><strong>Output directory already exists</strong></p></td><td><p><strong>LeRobot</strong><strong> 默认不覆盖</strong></p><p><strong>已有输出目录</strong></p></td><td><p><strong>换 OUT_DIR 或 rm -rf </strong><strong>旧目录后从头训练</strong></p></td></tr><tr><td><p><strong>机械臂一卡一卡</strong></p></td><td><p><strong>频繁重规划或同步推理造成停顿</strong></p></td><td><p><strong>REPLAN_EVERY=0；</strong></p><p><strong>必要时改异步</strong><strong> action buffer</strong></p></td></tr><tr><td><p><strong>到方块但不夹</strong></p></td><td><p><strong>模型</strong><strong> </strong><strong>action[</strong><strong>6] </strong><strong>没学好或</strong></p><p><strong>夹爪执行慢</strong></p></td><td><p><strong>LOG_EVERY=1 </strong><strong>分析</strong></p><p><strong> state/action/target 第 7 维</strong></p></td></tr></table></div>
+<h2 id="section-48">附录 A. 最短命令速查</h2>
+<h3 id="section-49">A.1 本机检测相机</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer
+v4l2-ctl --list-devices
+python ~/smolvla/tools/check_cameras.py</code></pre></div>
+<h3 id="section-50">A.2 上传 7 维数据集</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>rsync -avh --info=progress2 -e &quot;ssh -p 6034&quot; \
+  &quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA/&quot; \
+  root@192.0.2.10:/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA/</code></pre></div>
+<h3 id="section-51">A.3 服务器查看训练日志</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>tail -f /workspace/smolvla/logs/pick_2_5b_smolvla_20k.log
+ps -fp $(cat /workspace/smolvla/logs/pick_2_5b_smolvla_20k.pid)
+nvidia-smi</code></pre></div>
+<h3 id="section-52">A.4 本机推理</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+MODEL_DIR=&quot;$HOME/smolvla/models/pick_2.5b_20k&quot; \
+TASK=&quot;pick 2.5b&quot; \
+CAM_RIGHT=/dev/video4 \
+CAM_WRIST=/dev/video10 \
+ACTION_MODE=absolute \
+REPLAN_EVERY=0 \
+MAX_STEPS=1000 \
+MAX_JOINT_STEP=0.02 \
+JOINT_SPEED=7 \
+GRIPPER_SPEED=30 \
+CONTROL_HZ=30 \
+LOG_EVERY=10 \
+python ~/smolvla/inference/smolvla_fast_live.py</code></pre></div></div><div class="doc-bottom"><a href="../index.html">返回资源库</a><a href="../../lab/index.html#equipment">实验设备 →</a></div></article><aside class="doc-toc" aria-label="本页目录"><strong>本页目录</strong><a class="" href="#section-1">文档说明与目录</a><a class="" href="#section-2">1. 项目目标与完整流程</a><a class="" href="#section-3">2. 基础概念：SmolVLA、VLA、动作块与闭环推理</a><a class="sub" href="#section-4">2.1 SmolVLA 在本项目中的定位</a><a class="sub" href="#section-5">2.2 动作块与 REPLAN_EVERY</a><a class="sub" href="#section-6">2.3 训练与推理的区别</a><a class="" href="#section-7">3. 设备、环境与路径约定</a><a class="sub" href="#section-8">3.1 硬件与软件</a><a class="sub" href="#section-9">3.2 当前项目路径</a><a class="" href="#section-10">4. 本地相机检测与采集前准备</a><a class="sub" href="#section-11">4.1 进入推理环境</a><a class="sub" href="#section-12">4.2 查看系统相机节点</a><a class="sub" href="#section-13">4.3 逐个查看相机画面</a><a class="sub" href="#section-14">4.4 腕部相机在官方平台不显示时的判断</a><a class="sub" href="#section-15">4.5 实战：SmolVLA 代码实战</a><a class="" href="#section-21">5. 官方平台采集与数据集转换</a><a class="sub" href="#section-22">5.1 数据采集原则</a><a class="sub" href="#section-23">5.2 2.5 cm 方块正式数据集</a><a class="sub" href="#section-24">5.3 转换产物位置</a><a class="" href="#section-25">6. 14 维到 7 维数据清洗与质量检查</a><a class="sub" href="#section-26">6.1 检查 info.json</a><a class="sub" href="#section-27">6.2 判断有效 7 维在左侧还是右侧</a><a class="sub" href="#section-28">6.3 生成 7 维 SMOLVLA 数据集</a><a class="" href="#section-29">7. 上传服务器与训练环境确认</a><a class="sub" href="#section-30">7.1 rsync 上传数据集</a><a class="sub" href="#section-31">7.2 服务器检查数据集</a><a class="sub" href="#section-32">7.3 GPU 与缓存检查</a><a class="" href="#section-33">8. SmolVLA 训练、日志和 checkpoint 管理</a><a class="sub" href="#section-34">8.1 20-step 冒烟训练</a><a class="sub" href="#section-35">8.2 从头训练 20K</a><a class="sub" href="#section-36">8.3 训练监控</a><a class="sub" href="#section-37">8.4 20K checkpoint 目录</a><a class="" href="#section-38">9. 模型下载与本机推理</a><a class="sub" href="#section-39">9.1 下载 20K checkpoint</a><a class="sub" href="#section-40">9.2 检查模型结构</a><a class="sub" href="#section-41">9.3 实机推理命令</a><a class="" href="#section-42">10. 动作顺滑、速度和夹爪参数调节</a><a class="sub" href="#section-43">10.1 推荐对比档位</a><a class="" href="#section-44">11. 失败分析、补采策略与数据迭代</a><a class="sub" href="#section-45">11.1 失败阶段记录表</a><a class="sub" href="#section-46">11.2 大批量数据采集建议</a><a class="" href="#section-47">12. 常见问题与故障排查</a><a class="" href="#section-48">附录 A. 最短命令速查</a><a class="sub" href="#section-49">A.1 本机检测相机</a><a class="sub" href="#section-50">A.2 上传 7 维数据集</a><a class="sub" href="#section-51">A.3 服务器查看训练日志</a><a class="sub" href="#section-52">A.4 本机推理</a></aside></main><footer class="foot"><div class="wrap"><div class="foot-grid"><div><strong>智能物流系统北京市重点实验室</strong><p>北京物资学院 · 计算机与人工智能学院</p></div><div class="foot-links"><a href="../../lab/index.html">实验室主页</a><a href="https://www.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学校官网</a><a href="https://xxxy.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学院官网</a><a href="../sources.html">资料来源</a></div></div><div class="foot-bottom"><span>© 2026 智能物流系统北京市重点实验室</span><span>公开访问 · 文档与资料索引</span></div></div></footer></body></html>

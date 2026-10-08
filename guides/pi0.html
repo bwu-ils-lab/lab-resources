@@ -1,0 +1,172 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>π0：OpenPI、LIBERO 与真实机械臂复现 · 智能物流系统北京市重点实验室</title><meta name="description" content="OpenPI 环境、LIBERO 基准、自定义数据微调与 Policy Server 部署。"><meta name="theme-color" content="#123c57"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="../assets/seal.webp" type="image/webp"><link rel="stylesheet" href="../assets/site.css"><script src="../assets/site.js" defer></script></head><body class="resource-body"><a class="skip" href="#main">跳到正文</a><div class="resource-header"><div class="institution"><div class="wrap"><span>北京物资学院 · 计算机与人工智能学院</span><span class="institution-en">BEIJING WUZI UNIVERSITY</span></div></div><header class="topbar"><div class="wrap"><a class="brand" href="../index.html"><img src="../assets/seal.webp" alt="北京物资学院" class="" fetchpriority="high" decoding="async"><span><strong>实验室资源库</strong><small>智能物流系统北京市重点实验室</small></span></a><button class="menu-toggle" aria-label="展开导航" aria-expanded="false" aria-controls="site-nav">菜单</button><nav class="nav" id="site-nav" aria-label="主导航"><a href="../index.html" class="">全部资源</a><a href="../index.html?category=机械臂与模仿学习" class="">复现手册</a><a href="../index.html?category=研究进展" class="">研究资料</a><a class="portal" href="../../lab/index.html">实验室主页</a></nav></div></header></div><main id="main" class="doc-layout"><article class="doc-article"><div class="doc-heading"><div class="breadcrumb"><a href="../index.html">资源库</a> / 机械臂与模仿学习</div><h1>π0：OpenPI、LIBERO 与真实机械臂复现</h1><p>OpenPI 环境、LIBERO 基准、自定义数据微调与 Policy Server 部署。</p><div class="doc-meta"><span class="type-badge">复现手册</span><button class="print-button" data-print>打印 / 保存 PDF</button></div><div class="tags"><a href="../../lab/equipment/alicia.html" class="tag">Alicia-D / Alicia-M 示教与操作平台</a></div></div><div class="notice">来源：团队操作手册。用户名、服务器地址与 SSH 别名为通用示例，运行前替换为本机参数；流程未在本站逐项验证。</div><div class="article-content"><p><strong>π</strong><strong>0模型原理与复现实训</strong></p>
+<p><strong>面向</strong><strong> </strong><strong>OpenPI、LIBERO</strong><strong> </strong><strong>与</strong><strong>Alicia-M</strong><strong>真实</strong><strong>机械臂</strong><strong>部署的复现指导</strong></p>
+<h2 id="section-1">摘要</h2>
+<p>本章面向希望完成 π0 视觉—语言—动作（Vision-Language-Action, VLA）模型复现的学习者，采用“模型理解—标准基准复现—自定义数据微调—真实机器人部署—结果验证与排错”的操作链组织内容。</p>
+<p>在标准复现部分，本章以 LIBERO 为基准，说明数据转换、规范化统计量计算、π0 全参数与 LoRA 配置、训练启动、W&amp;B 监控、Policy Server 部署及仿真闭环评测流程；在自定义数据部分，进一步说明如何将同一套流程迁移到新的机器人和任务。最后给出真实机器人远程推理架构、Action Chunk 执行策略、训练—推理一致性检查以及按“数据字段与动作空间→模型输出→归一化/反归一化→执行端控制→真实表现”组织的故障排查方法。读者完成本章后，应能够独立判断“环境是否复现成功、模型是否训练正常、机器人失败发生在哪一层”。</p>
+<h3 id="section-2">复现路线图与完成标准</h3>
+<div class="table-scroll"><table><tr><th><p><strong>阶</strong><strong>段</strong></p></th><th><p><strong>完成标准</strong></p></th><th><p><strong>若失败优先检查</strong></p></th></tr><tr><td><p>A 环境复现</p></td><td><p>openpi 可导入；预训练模型可完成一次 dummy inference</p></td><td><p>依赖、权重、GPU/JAX</p></td></tr><tr><td><p>B LIBERO 推理</p></td><td><p>官方/指定 checkpoint 能在 LIBERO 启动闭环评测</p></td><td><p>MuJoCo、Policy Server、观测字段</p></td></tr><tr><td><p>C LIBERO 微调</p></td><td><p>norm stats 计算成功；训练 loss/grad_norm 正常；可加载中间 checkpoint</p></td><td><p>数据转换、config、freeze_filter、显存</p></td></tr><tr><td><p>D 自定义数据微调</p></td><td><p>自定义 LeRobot 数据可被训练脚本读取并生成有效 checkpoint</p></td><td><p>字段映射、任务文本、state/action 维度</p></td></tr><tr><td><p>E 真实机器人部署</p></td><td><p>服务器产生动作块；客户端安全、连续执行</p></td><td><p>动作空间、反归一化、控制频率、通信</p></td></tr><tr><td><p>F 结果验证</p></td><td><p>有可重复的成功率/失败类型记录，能定位主要误差来源</p></td><td><p>实验协议、日志与视频对齐</p></td></tr></table></div>
+<h2 id="section-3"> π0 模型概述</h2>
+<p>π0 是 Physical Intelligence 提出的通用机器人视觉—语言—动作模型。其设计目标不是为某个单一任务训练一个专用策略，而是利用视觉语言模型从互联网规模预训练中获得语义知识，再通过大规模、多机器人、多任务操作数据学习连续控制能力。原始论文将 π0 描述为构建在预训练 VLM 之上的 flow-matching VLA，并通过专门的动作专家输出连续低层控制命令。</p>
+<h3 id="section-4">π0 的基本思想</h3>
+<p>传统视觉语言模型擅长回答“画面中是什么、用户想做什么”，但输出通常是离散文本 token；机器人控制则要求高频、连续、具有时间相关性的动作。π0 的核心思想是在保留 VLM 视觉—语言理解能力的同时，引入面向机器人状态和连续动作的“动作专家”，并采用流匹配将随机动作逐步变换为可执行动作序列。</p>
+<p>(Iₜ, L, qₜ)  →  π₀  →  Aₜ:ₜ₊H₋₁</p>
+<p>其中 Iₜ 表示一个或多个相机图像，L 表示自然语言指令，qₜ 表示机器人本体状态，Aₜ:ₜ₊H₋₁ 表示未来 H 个时刻的 Action Chunk。对复现者而言，最重要的不是记住网络参数量，而是建立三层认识：第一层是“语义条件”（图像、语言）；第二层是“机器人条件”（state）；第三层是“连续动作生成”（flow matching + action expert）。</p>
+<h3 id="section-5">1.2 模型输入与输出</h3>
+<div class="table-scroll"><table><tr><th><p><strong>变</strong><strong>量</strong></p></th><th><p><strong>含义</strong></p></th><th><p><strong>复现时的检查重点</strong></p></th></tr><tr><td><p><strong>I</strong><strong>ₜ</strong></p></td><td><p><strong>多视角 RGB 图像</strong></p></td><td><p><strong>相机名称、顺序、尺寸、颜色通道、</strong><strong>数据类型和数值范围、</strong><strong>归一化处理一致</strong></p></td></tr><tr><td><p><strong>L / prompt</strong></p></td><td><p><strong>自然语言任务指令</strong></p></td><td><p><strong>训练 task 字段是否进入 prompt；训练/推理用词是否一致</strong></p></td></tr><tr><td><p><strong>q</strong><strong>ₜ</strong><strong> / state</strong></p></td><td><p><strong>机器人本体状态</strong></p></td><td><p><strong>维度、关节顺序、夹爪范围、单位、归一化统计量</strong></p></td></tr><tr><td><p><strong>A</strong></p></td><td><p><strong>动作序列</strong></p></td><td><p><strong>关节/末端空间，absolute/relative/delta，夹爪定义，动作维度</strong></p></td></tr><tr><td><p><strong>H</strong></p></td><td><p><strong>Action Horizon</strong></p></td><td><p><strong>一次预测多少步；训练、配置和执行策略必须对应</strong></p></td></tr></table></div>
+<h3 id="section-6">1.3 模型整体结构</h3>
+<p><img src="../assets/manual-pi0-rId8.webp" alt="手册配图" loading="lazy"></p>
+<p>图 1  π0 核心结构与信息流示意</p>
+<p>π0 沿用 PaliGemma 的视觉语言设计，并增加机器人状态、带噪动作及流时间步的输入投影。图像和语言 token 路由到较大的 VLM 主干；机器人 state 与带噪动作 token 路由到较小的动作专家。原始论文中 VLM 基于 Gemma 2B，动作专家宽度更小，参数量约 300M；两组专家主要通过 Transformer 自注意力交互。</p>
+<p>原始论文还采用分块因果注意力：图像与语言为第一块，机器人状态为第二块，带噪动作序列为第三块。动作 token 可以读取前面的视觉、语言和状态信息，而视觉语言 token 不反向读取后加入的机器人 token。这样既减少对 VLM 预训练分布的扰动，也使部分键值可以在流匹配采样时缓存。对复现而言，这解释了为什么“视觉语言主干正常”并不等于“动作输出正确”：动作专家、state 投影、动作归一化和采样过程仍然可能单独出错。</p>
+<h3 id="section-7">1.4 流匹配动作生成原理</h3>
+<p>训练时，设真实动作块为 A¹，随机噪声为 A⁰（通常由高斯分布采样），在随机时间 τ∈[0,1] 上构造中间动作：</p>
+<p>Aᵗᵃᵘ = (1 − τ)A⁰ + τA¹</p>
+<p>在线性路径下，目标速度方向可写为：</p>
+<p>v* = A¹ − A⁰</p>
+<p>模型根据当前视觉、语言、机器人状态、中间动作与时间 τ 预测速度场 vθ，并最小化预测速度和目标速度的差异：</p>
+<p>L_FM = E[ || vθ(Aᵗᵃᵘ, τ, Iₜ, L, qₜ) − (A¹ − A⁰) ||² ]</p>
+<p>推理时从随机动作开始，反复调用动作专家并用数值积分更新动作状态，最终得到动作块。直观理解是：模型不是“一次直接回归正确动作”，而是学习“当前这段带噪动作应该朝哪个方向修正”。因此推理涉及多次网络前向，推理步数会同时影响延迟和动作质量。</p>
+<h2 id="section-8"> π0 复现环境与数据准备</h2>
+<p>这一节的目标是把“模型能不能跑”和“数据对不对”分开验证。建议先完成官方环境和预训练权重推理，再接入 LIBERO 或自定义数据。这样当后续训练失败时，可以排除大量基础依赖问题。</p>
+<h3 id="section-9">软件与硬件环境配置</h3>
+<p>截至 2026 年 8 月，OpenPI 官方仓库仍以 Linux/NVIDIA GPU 为主要运行环境，README 标注的单卡显存参考为：推理大于 8 GB、LoRA 微调大于 22.5 GB、全参数微调大于 70 GB；官方测试系统为 Ubuntu 22.04。</p>
+<h3 id="section-10"> OpenPI 安装与预训练模型准备</h3>
+<p>官方推荐使用带子模块的方式克隆仓库，并通过 uv 安装依赖。先完成以下基础安装：</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>git clone --recurse-submodules git@github.com:Physical-Intelligence/openpi.git
+cd openpi
+
+# 若已经克隆过但没有子模块
+git submodule update --init --recursive
+
+GIT_LFS_SKIP_SMUDGE=1 uv sync
+GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .</code></pre></div>
+<p>π0 基础权重可由 OpenPI 自动从官方资产位置下载并缓存。当前仓库列出的 π0 基础 checkpoint 为 gs://openpi-assets/checkpoints/pi0_base。为保证复现可追踪，建议在第一次训练前记录：代码 commit、config 名称、权重来源、数据集版本、GPU 型号和 W&amp;B run id。</p>
+<h3 id="section-11">数据集格式与字段说明</h3>
+<p>OpenPI 的常规微调示例使用 LeRobot 数据格式，并通过 DataConfig 完成原始字段到模型输入的映射。对任何自定义数据集，最低需要明确四类信息：视觉观测、机器人状态、动作和任务语言。</p>
+<div class="table-scroll"><table><tr><th><p><strong>数</strong><strong>据项</strong></p></th><th><p><strong>常见字段示例</strong></p></th><th><p><strong>必须确认</strong></p></th></tr><tr><td><p>视觉</p></td><td><p>observation.images.*</p></td><td><p>相机名称是否与 DataConfig 的 repack/transforms 对齐</p></td></tr><tr><td><p>状态</p></td><td><p>observation.state</p></td><td><p>维度、单位、关节顺序、夹爪状态</p></td></tr><tr><td><p>动作</p></td><td><p>action</p></td><td><p>动作空间、维度、是否 delta/absolute、执行语义</p></td></tr><tr><td><p>语言</p></td><td><p>task → prompt</p></td><td><p>每个 episode/task 标签是否正确；prompt_from_task 是否开启</p></td></tr><tr><td><p>元数据</p></td><td><p>episode/frame/timestamp/fps</p></td><td><p>轨迹边界、帧率、视频与状态同步</p></td></tr></table></div>
+<p>数据检查应优先做“结构检查”而非立刻训练。建议随机抽取若干 episode，逐帧查看图像、state、action、task；再计算每维动作的最小值、最大值、分位数和相邻帧差值。若动作字段本身错误，任何学习率调参都无法修复。</p>
+<h3 id="section-12">状态、动作与归一化处理</h3>
+<p>真实机器人复现中最常见的灾难性错误来自动作定义不一致。建议在训练前用一张“动作契约表”固定以下内容，并在推理客户端再次逐项核对。</p>
+<div class="table-scroll"><table><tr><th><p><strong>检</strong><strong>查项</strong></p></th><th><p><strong>训练数据</strong></p></th><th><p><strong>模型输出/服务端</strong></p></th><th><p><strong>机器人执行端</strong></p></th></tr><tr><td><p>动作空间</p></td><td><p>关节 / 末端</p></td><td><p>必须与训练 config 一致</p></td><td><p>控制接口接受哪一种</p></td></tr><tr><td><p>表示方式</p></td><td><p>absolute / relative / delta</p></td><td><p>是否有额外 delta transform</p></td><td><p>是否再次累加/转换</p></td></tr><tr><td><p>维度与顺序</p></td><td><p>例如 7 维</p></td><td><p>padding 前后真实有效维度</p></td><td><p>电机/关节映射顺序</p></td></tr><tr><td><p>夹爪</p></td><td><p>范围与开合方向</p></td><td><p>归一化后的语义</p></td><td><p>实际控制范围</p></td></tr><tr><td><p>归一化</p></td><td><p>训练 norm_stats</p></td><td><p>服务端归一化/反归一化位置</p></td><td><p>不要重复反归一化</p></td></tr><tr><td><p>时间</p></td><td><p>数据 FPS / chunk</p></td><td><p>action_horizon</p></td><td><p>客户端执行频率与每次执行步数</p></td></tr></table></div>
+<p>OpenPI 在正式训练前要求计算 normalization statistics。官方 README 的通用流程是用训练 config 运行 scripts/compute_norm_stats.py，然后再启动训练。 如果是在预训练中已经出现过的机器人平台上继续微调，官方也提供复用预训练 norm stats 的机制；是否复用取决于动作定义是否完全一致。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>uv run scripts/compute_norm_stats.py --config-name &lt;your_config_name&gt;</code></pre></div>
+<div class="callout">排错顺序：发现机械臂动作很小、抖动或跳变时，优先按“动作空间和字段 → 模型输出 → 归一化/反归一化 → 执行命令 → 实际机械臂”排查。</div>
+<h2 id="section-13"> LIBERO 基准复现</h2>
+<p>LIBERO 的作用是提供一个可控、可重复、与真实机器人硬件无关的标准测试点。完成 LIBERO 复现后，可以确认 OpenPI 环境、模型加载、观测构造、Action Chunk 和闭环推理链基本正常；若之后真实机器人失败，问题范围就更集中在自定义数据、动作转换和硬件执行。</p>
+<h3 id="section-14">LIBERO 基准与任务体系</h3>
+<p>LIBERO 是面向机器人操作知识迁移和终身学习的基准，共构建 130 个任务，包含 LIBERO-Spatial、LIBERO-Object、LIBERO-Goal 和 LIBERO-10 等任务套件。</p>
+<div class="table-scroll"><table><tr><th><p><strong>套</strong><strong>件</strong></p></th><th><p><strong>主要变化因素</strong></p></th><th><p><strong>复现时关注</strong></p></th></tr><tr><td><p>LIBERO-Spatial</p></td><td><p>空间关系变化</p></td><td><p>模型是否理解位置/关系条件</p></td></tr><tr><td><p>LIBERO-Object</p></td><td><p>操作对象变化</p></td><td><p>视觉目标识别与对象条件</p></td></tr><tr><td><p>LIBERO-Goal</p></td><td><p>目标语义变化</p></td><td><p>语言指令与任务目标</p></td></tr><tr><td><p>LIBERO-10</p></td><td><p>综合任务子集</p></td><td><p>多任务总体泛化与闭环成功率</p></td></tr></table></div>
+<div class="callout">重要区分：当前 OpenPI 的 LIBERO README 公开给出的高成功率参考结果是 π0.5 @ 30k，而不是 π0。本章使用 LIBERO 的主要目的，是复现流程与评测协议；若复现 π0，应使用 π0 对应 config 和 checkpoint，不要把 π0.5 数值当作 π0 的目标值。</div>
+<h3 id="section-15">LIBERO 环境与数据集配置</h3>
+<p>OpenPI 官方 LIBERO 示例依赖仓库子模块，并推荐通过 Docker 运行评测，因为 Docker 能统一 MuJoCo、OpenGL/EGL 和客户端环境，也可以使用独立的Conda环境运行LIBERO仿真客户端，同时在OpenPI环境中运行Policy Server。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code># 确保子模块完整
+git submodule update --init --recursive
+
+# Docker 方式（官方推荐）
+sudo xhost +local:docker
+SERVER_ARGS=&quot;--env LIBERO&quot; docker compose -f examples/libero/compose.yml up --build
+
+# 若 EGL 报错，可尝试 GLX
+MUJOCO_GL=glx SERVER_ARGS=&quot;--env LIBERO&quot;   docker compose -f examples/libero/compose.yml up --build</code></pre></div>
+<p>如果目的是训练 π0，而不是只运行现成 checkpoint，可以直接使用 OpenPI 提供的预转换数据集 physical-intelligence/libero；也可以把原始 LIBERO 数据转换为 LeRobot 格式，以学习自定义数据转换流程：</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>uv run examples/libero/convert_libero_data_to_lerobot.py   --data_dir /path/to/your/libero/data</code></pre></div>
+<h3 id="section-16">LIBERO 数据预处理</h3>
+<p>当前 OpenPI 中的 LeRobotLiberoDataConfig 负责将 LeRobot 原始字段转换为 π0 所需的输入/输出，并可配置 prompt_from_task 和额外的 delta action 变换。官方 π0 LIBERO config 使用 prompt_from_task=True，并在 π0 示例中启用 extra_delta_transform=True。</p>
+<div class="callout">data = LeRobotLiberoDataConfig(<br>    repo_id=&quot;physical-intelligence/libero&quot;,<br>    base_config=DataConfig(prompt_from_task=True),<br>    extra_delta_transform=True,<br>)</div>
+<p>这里的 extra_delta_transform 是“数据适配的一部分”，不是所有机器人都应开启。迁移到自定义数据时必须先回答：数据中的 action 已经是什么定义？若已经是期望的 delta action，再额外做一次差分会导致动作幅度和语义错误。完成上述数据变换后，在正式训练前应进行以下数据验收检查：</p>
+<p>1. 用数据可视化或统计脚本确认输入图像、state、action 和 task 可以逐 episode 对齐。</p>
+<p>2. 确认 action_dim 与 config 真实有效维度一致；若模型有 padding 维度，区分“模型最大维度”和“机器人实际维度”。</p>
+<p>3. 计算 norm stats，并检查每个动作维度的 q01/q99 或均值方差是否合理。</p>
+<p>4. 随机抽样训练 batch，确认 prompt 不是空字符串，Action Chunk 不跨越错误 episode 边界。</p>
+<h3 id="section-17">π0 在 LIBERO 上的微调配置</h3>
+<p>OpenPI 当前提供 π0 全参数和低显存 LoRA 两类 LIBERO 示例。用于复现 LoRA 时，可从官方 pi0_libero_low_mem_finetune 配置起步；该配置使用 π0 base、gemma_2b_lora 与 gemma_300m_lora，并通过 get_freeze_filter() 冻结非 LoRA 权重，同时关闭 EMA。</p>
+<div class="callout">TrainConfig(<br>    name=&quot;pi0_libero_low_mem_finetune&quot;,<br>    model=Pi0Config(<br>        paligemma_variant=&quot;gemma_2b_lora&quot;,<br>        action_expert_variant=&quot;gemma_300m_lora&quot;,<br>    ),<br>    data=LeRobotLiberoDataConfig(<br>        repo_id=&quot;physical-intelligence/libero&quot;,<br>        base_config=DataConfig(prompt_from_task=True),<br>        extra_delta_transform=True,<br>    ),<br>    weight_loader=CheckpointWeightLoader(<br>        &quot;gs://openpi-assets/checkpoints/pi0_base/params&quot;<br>    ),<br>    num_train_steps=30_000,<br>    freeze_filter=Pi0Config(<br>        paligemma_variant=&quot;gemma_2b_lora&quot;,<br>        action_expert_variant=&quot;gemma_300m_lora&quot;,<br>    ).get_freeze_filter(),<br>    ema_decay=None,<br>)</div>
+<p>以上代码是“理解结构的简化摘录”，实际使用时应以当前 src/openpi/training/config.py 为准。复现的第一轮建议尽量不修改官方 config；只有官方基线跑通后，再针对显存、数据规模和任务特性调整 batch size、学习率和训练步数。</p>
+<h3 id="section-18">LIBERO 模型训练与监控</h3>
+<p>训练前先计算 norm stats，再启动训练。以下命令使用 π0 LoRA 示例配置：</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>uv run scripts/compute_norm_stats.py   --config-name pi0_libero_low_mem_finetune
+
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 uv run scripts/train.py pi0_libero_low_mem_finetune   --exp-name=pi0_libero_lora_repro   --overwrite</code></pre></div>
+<p>OpenPI 会把训练日志输出到终端并把 checkpoint 保存到 checkpoints 目录；启用 W&amp;B 后可查看 loss、grad_norm、param_norm、learning rate 与 GPU 系统指标。判断训练是否正常时，重点看趋势而不是某个孤立数值。</p>
+<div class="table-scroll"><table><tr><th><p><strong>曲</strong><strong>线</strong></p></th><th><p><strong>正常现象</strong></p></th><th><p><strong>异常提示</strong></p></th></tr><tr><td><p>loss</p></td><td><p>总体下降，后期波动范围缩小</p></td><td><p>持续上升、NaN、长期不降</p></td></tr><tr><td><p>grad_norm</p></td><td><p>早期较大，后期趋于稳定</p></td><td><p>频繁巨大尖峰或长期接近 0</p></td></tr><tr><td><p>param_norm</p></td><td><p>LoRA 下通常缓慢变化</p></td><td><p>突然跳变、持续快速增长</p></td></tr><tr><td><p>learning rate</p></td><td><p>符合 warmup/decay 预设</p></td><td><p>曲线和 config 不一致</p></td></tr><tr><td><p>GPU utilization</p></td><td><p>训练卡大部分时间有负载</p></td><td><p>长期空闲说明数据或同步等待</p></td></tr></table></div>
+<div class="callout">不要误判：训练 loss 很低只说明拟合训练目标，不等于 LIBERO success rate 高，更不等于真实机器人复现成功。</div>
+<h3 id="section-19">LIBERO 推理与闭环控制</h3>
+<p>训练得到 checkpoint 后，可先单独启动 policy server，再由 LIBERO 客户端循环发送观测。服务器默认端口为 8000。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>uv run scripts/serve_policy.py policy:checkpoint   --policy.config=pi0_libero_low_mem_finetune   --policy.dir=checkpoints/pi0_libero_low_mem_finetune/pi0_libero_lora_repro/&lt;checkpoint_step&gt;</code></pre></div>
+<p>对于 LIBERO 的正式评测，官方更推荐 Docker 化工作流，因为它能同时处理模型服务器和仿真客户端。若加载自定义 checkpoint，可通过 SERVER_ARGS 指定 config 和目录；任务套件通过 CLIENT_ARGS 选择。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>export SERVER_ARGS=&quot;--env LIBERO policy:checkpoint   --policy.config pi0_libero_low_mem_finetune   --policy.dir ./my_custom_checkpoint&quot;
+
+export CLIENT_ARGS=&quot;--args.task-suite-name libero_10&quot;
+
+docker compose -f examples/libero/compose.yml up --build</code></pre></div>
+<p>闭环执行的核心不是“模型一次把整条轨迹生成完”，而是周期性获取新观测、生成 Action Chunk、执行其中若干步，再重新观测。实际执行多少步取决于环境/客户端设计；若执行过多，策略对新视觉信息的响应会变慢，若每步都重新推理，则计算和通信负担增大。</p>
+<h3 id="section-20">LIBERO 评测与结果复现</h3>
+<p>LIBERO 的主要指标是任务成功率。复现时至少记录每个 task suite 的成功次数、总 rollout 数、平均成功率、失败任务列表和 checkpoint step。若改变随机种子、任务套件、评测 episode 数或模型版本，应视为不同实验。</p>
+<div class="table-scroll"><table><tr><th><p><strong>记</strong><strong>录项</strong></p></th><th><p><strong>示例格式</strong></p></th></tr><tr><td><p>代码版本</p></td><td><p>openpi commit: &lt;hash&gt;</p></td></tr><tr><td><p>模型 config</p></td><td><p>pi0_libero_low_mem_finetune</p></td></tr><tr><td><p>checkpoint</p></td><td><p>step 10000 / 20000 / 30000</p></td></tr><tr><td><p>任务套件</p></td><td><p>libero_spatial / object / goal / libero_10</p></td></tr><tr><td><p>随机种子</p></td><td><p>seed = ...</p></td></tr><tr><td><p>成功率</p></td><td><p>success / total</p></td></tr><tr><td><p>失败摘要</p></td><td><p>目标选择失败、抓取失败、执行超时等</p></td></tr></table></div>
+<p>当前 OpenPI LIBERO README 给出的公开参考结果为 π0.5 @ 30k：Spatial 98.8、Object 98.2、Goal 98.0、LIBERO-10 92.4，平均 96.85。该结果可用于验证“官方 Docker + checkpoint + 评测脚本”是否工作，但不能作为 π0 模型的直接复现目标。对 π0 应比较相同版本、相同 config、相同 checkpoint 来源下的结果。</p>
+<h2 id="section-21">自定义数据 π0 LoRA 微调</h2>
+<h3 id="section-22">数据契约与目录约定</h3>
+<div class="table-scroll"><table><tr><th><p><strong>类</strong><strong>别</strong></p></th><th><p><strong>通用表示</strong></p></th><th><p><strong>作用</strong></p></th></tr><tr><td><p>官方源码</p></td><td><p>src/openpi/</p></td><td><p>模型、数据加载、变换、训练与服务实现</p></td></tr><tr><td><p>官方脚本</p></td><td><p>scripts/train.py；scripts/compute_norm_stats.py；scripts/serve_policy.py</p></td><td><p>OpenPI 标准训练、统计量和服务入口</p></td></tr><tr><td><p>轻量客户端</p></td><td><p>packages/openpi-client/</p></td><td><p>WebSocket/MessagePack 客户端，不加载 GPU 模型</p></td></tr><tr><td><p>训练输出</p></td><td><p>checkpoints/&lt;CONFIG_NAME&gt;/&lt;EXPERIMENT_NAME&gt;/&lt;STEP&gt;/</p></td><td><p>Orbax Checkpoint；禁止写死某次实验的绝对路径</p></td></tr><tr><td><p>数据集</p></td><td><p>&lt;DATASET_ROOT&gt;/</p></td><td><p>LeRobot 数据，独立于 OpenPI 仓库</p></td></tr><tr><td><p>基础参数</p></td><td><p>&lt;PI0_BASE_PARAMS&gt;/</p></td><td><p>官方 π0 base 的 params 目录</p></td></tr><tr><td><p><strong>训练字段</strong></p></td><td><p><strong>实测契约</strong></p></td><td><p><strong>说明</strong></p></td></tr><tr><td><p>observation.images.cam_head</p></td><td><p>RGB，固定相机</p></td><td><p>对应 observation/image</p></td></tr><tr><td><p>observation.images.cam_wrist</p></td><td><p>RGB，腕部相机</p></td><td><p>对应 observation/wrist_image</p></td></tr><tr><td><p>observation.state</p></td><td><p>shape=(7,)</p></td><td><p>前 6 维为关节弧度，第 7 维为夹爪绝对位置</p></td></tr><tr><td><p>actions</p></td><td><p>shape=(7,)</p></td><td><p>绝对关节目标 + 夹爪绝对目标，不做 delta action</p></td></tr><tr><td><p>task / prompt</p></td><td><p>任务文本</p></td><td><p>训练与推理必须保持语义一致</p></td></tr></table></div>
+<p>先固定数据字段、单位和相机语义，再开始计算统计量或训练。数据可以放在仓库外部；OpenPI 代码、训练产物和数据集不要混写到同一目录。以下路径均相对 &lt;OPENPI_ROOT&gt;，只有 &lt;DATASET_ROOT&gt; 与 &lt;PI0_BASE_PARAMS&gt; 是外部资源。</p>
+<h3 id="section-23">数据适配、Prompt 与动作契约</h3>
+<p>自定义数据复现前，必须把“数据集字段 → OpenPI 输入字典 → 模型内部表示 → Policy 输出 → 机器人执行”写成唯一的数据契约。多任务训练尤其要锁死 prompt 链：LeRobot 的 task 必须通过 prompt_from_task=True 或等价的自定义 Repack/transform 进入 prompt；训练前随机检查多个 batch，确认 prompt 非空、不同任务的文本可区分，并与图像、state、action 属于同一 episode。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>base_config=DataConfig(prompt_from_task=True)
+
+# 冒烟检查（伪代码）
+assert sample[&quot;prompt&quot;] is not None and len(sample[&quot;prompt&quot;]) &gt; 0
+print(sample[&quot;prompt&quot;], sample[&quot;state&quot;].shape, sample[&quot;actions&quot;].shape)</code></pre></div>
+<p>动作契约同时需要明确：①关节空间还是末端空间；②absolute/relative/delta；③机器人有效维度与模型 action_dim；④夹爪范围和开合方向；⑤单位和关节顺序；⑥训练/推理是否应用 DeltaActions、AbsoluteActions、Normalize/Unnormalize。只要其中一项在训练端与执行端不一致，即使 loss 很低也可能产生大幅跳变、抖动或目标错误。</p>
+<h3 id="section-24">归一化统计与 LoRA 配置</h3>
+<p>归一化统计量必须由最终训练数据和最终字段顺序计算。实测脚本默认随机抽取最多 2,000 帧，以 batch size 8 统计 state 与 actions，并写入 assets/&lt;CONFIG_NAME&gt;/&lt;ASSET_ID&gt;/norm_stats.json。若数据分布复杂，可把 max-frames 设为 0 统计全量。</p>
+<p>cd &lt;OPENPI_ROOT&gt;<br>export OPENPI_ROOT=&quot;$PWD&quot;<br>export ALICIA_DATASET_ROOT=&quot;&lt;DATASET_ROOT&gt;&quot;<br>export PI0_BASE_PARAMS=&quot;&lt;PI0_BASE_PARAMS&gt;&quot;<br><br>.venv/bin/python scripts/train_pi0_lora_alicia.py               --compute-norm-stats --max-frames 2000<br><br>test -f assets/&lt;CONFIG_NAME&gt;/&lt;ASSET_ID&gt;/norm_stats.json</p>
+<div class="table-scroll"><table><tr><th><p><strong>参数</strong></p></th><th><p><strong>实测值</strong></p></th><th><p><strong>复现含义</strong></p></th></tr><tr><td><p>基础模型</p></td><td><p>π0 base</p></td><td><p>从官方 base params 初始化</p></td></tr><tr><td><p>PaliGemma</p></td><td><p>gemma_2b_lora</p></td><td><p>视觉语言主干使用 LoRA</p></td></tr><tr><td><p>Action Expert</p></td><td><p>gemma_300m_lora</p></td><td><p>动作专家使用 LoRA</p></td></tr><tr><td><p>action horizon</p></td><td><p>50</p></td><td><p>每次预测 50×7 动作；执行端可只消费前 N 步</p></td></tr><tr><td><p>freeze_filter</p></td><td><p>由相同 Pi0Config 生成</p></td><td><p>冻结非 LoRA 参数，必须与模型 variant 一致</p></td></tr><tr><td><p>delta action</p></td><td><p>关闭</p></td><td><p>Alicia-M 数据使用绝对关节和夹爪目标</p></td></tr><tr><td><p>EMA</p></td><td><p>关闭</p></td><td><p>与实测配置保持一致</p></td></tr></table></div>
+<h3 id="section-25">启动训练与多 GPU 配置</h3>
+<p>OpenPI TrainConfig.batch_size 表示全局 batch size。多 GPU 时必须能被设备数整除：例如全局 batch_size=16、2 张 GPU 时，每卡有效 batch 为 8；若只使用 1 张 GPU，则每卡 batch 为 16。本文训练示例采用 2 张 GPU，因此同时暴露两张设备并将自定义入口的 fsdp_devices 设置为 2。</p>
+<p>cd &lt;OPENPI_ROOT&gt;</p>
+<p>mkdir -p logs</p>
+<p>CUDA_VISIBLE_DEVICES=&lt;GPU_ID_0&gt;,&lt;GPU_ID_1&gt; \</p>
+<p>nohup .venv/bin/python scripts/train_pi0_lora_alicia.py \</p>
+<p>--fsdp_devices 2 \</p>
+<p>--exp_name &lt;EXPERIMENT_NAME_2GPU&gt; \</p>
+<p>  &gt; logs/&lt;TRAIN_LOG&gt;.log 2&gt;&amp;1 &amp;</p>
+<div class="table-scroll"><table><tr><th><p><strong>训练参数</strong></p></th><th><p><strong>推荐值</strong><strong>(</strong><strong>非最优</strong><strong>)</strong></p></th><th><p><strong>注意事项</strong></p></th></tr><tr><td><p>batch_size</p></td><td><p>16（全局）</p></td><td><p>OpenPI TrainConfig 定义为 global batch；2 GPU 时每卡 8，1 GPU 时每卡 16</p></td></tr><tr><td><p>devices / fsdp_devices</p></td><td><p>2</p></td><td><p>本手册实测双 GPU；batch_size 必须能被设备数整除</p></td></tr><tr><td><p>num_train_steps</p></td><td><p>25,000</p></td><td><p>JAX 训练 step 从 0 计数，最终 checkpoint 通常为 24,999</p></td></tr><tr><td><p>save_interval</p></td><td><p>5,000</p></td><td><p>建议保留 5k / 10k / 15k / 20k / 24,999，真实效果对比后选部署版本</p></td></tr><tr><td><p>optimizer</p></td><td><p>AdamW</p></td><td><p>显式记录实际 b1/b2/eps/weight_decay；当前 OpenPI 默认 b1=0.9, b2=0.95, eps=1e-8, weight_decay=1e-10</p></td></tr><tr><td><p>peak_lr</p></td><td><p>1e-5</p></td><td><p>本手册小数据 LoRA 的保守复现配置；</p></td></tr><tr><td><p>warmup_steps</p></td><td><p>500</p></td><td><p>前 500 step 线性 warmup 到 peak_lr</p></td></tr><tr><td><p>decay_steps</p></td><td><p>25,000</p></td><td><p>整个 schedule 的目标终点；包含 warmup，不是 warmup 后再额外衰减 25k</p></td></tr><tr><td><p>decay_lr</p></td><td><p>1e-6</p></td><td><p>训练末期最低学习率</p></td></tr><tr><td><p>clip_gradient_norm</p></td><td><p>1.0</p></td><td><p>与当前 OpenPI AdamW 默认梯度裁剪一致</p></td></tr><tr><td><p>EMA</p></td><td><p>关闭</p></td><td><p>LoRA 微调保持 ema_decay=None</p></td></tr><tr><td><p>log_interval</p></td><td><p>100</p></td><td><p>记录 loss、grad_norm、param_norm；learning_rate 若需要必须显式 log</p></td></tr><tr><td><p>resume / overwrite</p></td><td><p>新训练：False / True；续训：True / False</p></td><td><p>续训必须恢复 train_state（optimizer + step），禁止仅加载 params 后重新 warmup</p></td></tr><tr><td><p>W&amp;B</p></td><td><p>开启</p></td><td><p>记录 config、loss/grad_norm/param_norm 与系统指标；JAX 默认入口不保证有 learning_rate 曲线</p></td></tr></table></div>
+<div class="callout">开始长训前先完成：数据 schema 检查 → norm_stats 检查 → 单 batch 数据加载 → 模型参数恢复 → 10～100 step 冒烟训练。overwrite=True 会清空同名实验目录，不要复用已有 &lt;EXPERIMENT_NAME&gt;。</div>
+<h3 id="section-26">训练监控与实测结果</h3>
+<p>本实验使用 <a href="https://wandb.ai/" target="_blank" rel="noopener noreferrer">Weights &amp; Biases</a>（W&amp;B）记录训练配置、训练曲线和GPU运行状态。训练服务器通过W&amp;B SDK上传监控数据，实验人员可在浏览器中远程查看，无需持续通过SSH执行日志命令。</p>
+<div class="table-scroll"><table><tr><th><p>监控项</p></th><th><p>观察重点</p></th><th><p>异常表现</p></th></tr><tr><td><p>loss</p></td><td><p>整体是否下降并逐渐稳定</p></td><td><p>持续上升、剧烈振荡或出现NaN</p></td></tr><tr><td><p>grad_norm</p></td><td><p>梯度是否处于稳定范围</p></td><td><p>突然放大、持续为零或出现NaN</p></td></tr><tr><td><p>param_norm</p></td><td><p>模型参数规模是否稳定</p></td><td><p>突然跳变或持续异常增长</p></td></tr><tr><td><p>step</p></td><td><p>训练是否持续推进</p></td><td><p>长时间停留在同一步</p></td></tr><tr><td><p>GPU利用率</p></td><td><p>计算资源是否被有效使用</p></td><td><p>长期接近零，可能是数据加载或进程异常</p></td></tr><tr><td><p>GPU显存</p></td><td><p>是否接近显存上限</p></td><td><p>持续满载并发生OOM</p></td></tr><tr><td><p>camera_views</p></td><td><p>两路相机及预处理是否正确</p></td><td><p>视角接反、黑屏、颜色异常或尺寸错误</p></td></tr><tr><td><p>训练配置</p></td><td><p>batch、步数、FSDP和数据配置是否正确</p></td><td><p>页面配置与预期实验不一致</p></td></tr></table></div>
+<h3 id="section-27">Checkpoint 校验、选择与续训</h3>
+<p>推理前应检查目录结构，而不是只检查文件夹是否存在。Orbax Checkpoint 可能把数组分散在多个元数据与数据文件中，不能手工复制单个 manifest 代替整个目录。</p>
+<p>cd &lt;OPENPI_ROOT&gt;<br>CKPT=&quot;checkpoints/&lt;CONFIG_NAME&gt;/&lt;EXPERIMENT_NAME&gt;/&lt;STEP&gt;&quot;<br><br>test -d &quot;$CKPT/params&quot;<br>test -d &quot;$CKPT/train_state&quot;<br>test -f &quot;$CKPT/assets/&lt;ASSET_ID&gt;/norm_stats.json&quot;<br>test -f &quot;$CKPT/_CHECKPOINT_METADATA&quot;<br>du -sh &quot;$CKPT&quot;</p>
+<div class="callout">选择 Checkpoint 时同时比较：离线动作分布、关节范围、夹爪闭合时序、短程真机成功率和连续运行稳定性。不要仅按最低训练 loss 自动决定部署版本。</div>
+<h2 id="section-28">π0 真实机器人部署</h2>
+<h3 id="section-29">架构、占位符与所需文件</h3>
+<div class="table-scroll"><table><tr><th><p><strong>占</strong><strong>位符</strong></p></th><th><p><strong>填写内容</strong></p></th></tr><tr><td><p>&lt;TRAIN_SERVER_HOST&gt;</p></td><td><p>训练服务器主机名或地址</p></td></tr><tr><td><p>&lt;SSH_PORT&gt;</p></td><td><p>SSH 监听端口</p></td></tr><tr><td><p>&lt;POLICY_SERVER_HOST&gt;</p></td><td><p>客户端可访问的策略服务器地址</p></td></tr><tr><td><p>&lt;POLICY_SERVER_PORT&gt;</p></td><td><p>策略 WebSocket 端口</p></td></tr><tr><td><p>&lt;ROBOT_SERIAL_PORT&gt;</p></td><td><p>Alicia-M 串口</p></td></tr><tr><td><p>&lt;FIXED_CAMERA_SERIAL&gt;</p></td><td><p>Orbbec 固定相机序列号</p></td></tr><tr><td><p>&lt;WRIST_CAMERA_SERIAL&gt;</p></td><td><p>RealSense 腕部相机序列号</p></td></tr><tr><td><p>&lt;LOCAL_PROXY_PORT&gt;</p></td><td><p>本机代理端口（如有）</p></td></tr></table></div>
+<p>服务端加载模型、归一化统计量并执行 JAX 推理；Windows 客户端采集 Orbbec Gemini 336L 固定视角、Intel RealSense 腕部视角和 Alicia-M 关节状态，通过 OpenPI WebSocket 协议发送 observation，再对返回动作做安全限制和 PV 控制。</p>
+<h3 id="section-30">服务端模型加载与启动</h3>
+<p>服务端负责加载训练完成的checkpoint、构建推理策略，并通过WebSocket向客户端提供动作预测服务。训练配置、数据变换、归一化统计量和模型结构必须与checkpoint一致。</p>
+<p>如果训练配置已经注册到当前OpenPI版本的全局配置机制中，优先使用官方服务脚本：</p>
+<p>cd &lt;OPENPI_ROOT&gt;</p>
+<p>uv run scripts/serve_policy.py \</p>
+<p>  policy:checkpoint \</p>
+<p>  --policy.config=&lt;CONFIG_NAME&gt; \</p>
+<p>  --policy.dir=checkpoints/&lt;CONFIG_NAME&gt;/&lt;EXPERIMENT_NAME&gt;/&lt;STEP&gt;</p>
+<h3 id="section-31">Windows 客户端与双相机输入</h3>
+<p>Windows 客户端使用独立 Conda 环境，安装 Alicia-M SDK、Orbbec SDK v2、Intel RealSense SDK、OpenPI 轻量客户端及脚本依赖。</p>
+<p>conda activate &lt;CLIENT_ENV&gt;<br>chcp 65001<br>$env:PYTHONUTF8 = &quot;1&quot;<br>$env:NO_PROXY = &quot;localhost,127.0.0.1,&lt;POLICY_SERVER_HOST&gt;&quot;<br>$env:no_proxy = $env:NO_PROXY<br><br>Test-NetConnection &lt;POLICY_SERVER_HOST&gt; -Port &lt;POLICY_SERVER_PORT&gt;</p>
+<div class="table-scroll"><table><tr><th><p><strong>设备</strong></p></th><th><p><strong>通用参数</strong></p></th><th><p><strong>核验</strong></p></th></tr><tr><td><p>Alicia-M</p></td><td><p>&lt;ROBOT_SERIAL_PORT&gt;</p></td><td><p>串口可打开、固件模式正确、状态连续更新</p></td></tr><tr><td><p>固定相机</p></td><td><p>Orbbec Gemini 336L；&lt;FIXED_CAMERA_SERIAL&gt;</p></td><td><p>原生 SDK 返回任务视角 RGB</p></td></tr><tr><td><p>腕部相机</p></td><td><p>Intel RealSense；&lt;WRIST_CAMERA_SERIAL&gt;</p></td><td><p>pyrealsense2 返回腕部 RGB</p></td></tr><tr><td><p>图像</p></td><td><p>640×480 @ 30 FPS</p></td><td><p>转换为 RGB，再由 OpenPI resize/pad 到模型输入</p></td></tr><tr><td><p>状态</p></td><td><p>shape=(7,)</p></td><td><p>单位、关节顺序和夹爪范围与训练一致</p></td></tr></table></div>
+<h3 id="section-32">分阶段联调与安全执行</h3>
+<div class="table-scroll"><table><tr><th><p><strong>阶</strong><strong>段</strong></p></th><th><p><strong>客户端模式</strong></p></th><th><p><strong>通过标准</strong></p></th></tr><tr><td><p>网络与元数据</p></td><td><p>连接服务，不连接机器人</p></td><td><p>能读取 action_dim、单位和观测字段</p></td></tr><tr><td><p>离线 probe</p></td><td><p>用录制帧推理</p></td><td><p>actions.shape与目标一致，数值有限且范围合理</p></td></tr><tr><td><p>真机 dry-run</p></td><td><p>连接机器人与双相机，不加 --execute</p></td><td><p>观测正确、只打印目标不运动</p></td></tr><tr><td><p>单步执行</p></td><td><p>chunks=1，actions-per-chunk=1</p></td><td><p>方向、单位、顺序、限幅正确</p></td></tr><tr><td><p>短动作块</p></td><td><p>逐步增加 N</p></td><td><p>commanded 与 measured 跟踪，急停有效</p></td></tr><tr><td><p>连续闭环</p></td><td><p>chunks=0</p></td><td><p>持续重规划并完成任务，人工全程监护</p></td></tr></table></div>
+<p>python &lt;CLIENT_PROJECT_ROOT&gt;/scripts/alicia_openpi_client.py `<br>  --host &lt;POLICY_SERVER_HOST&gt; --port &lt;POLICY_SERVER_PORT&gt; `<br>  --prompt &quot;grab and place&quot; `<br>  robot --robot-port &lt;ROBOT_SERIAL_PORT&gt; `<br>  --camera-backend orbbec-realsense `<br>  --orbbec-serial &lt;FIXED_CAMERA_SERIAL&gt; `<br>  --realsense-serial &lt;WRIST_CAMERA_SERIAL&gt; `<br>  --camera-width 640 --camera-height 480 --fps 30 `<br>  --robot-speed 20 --robot-control-mode pv `<br>  --max-joint-step-deg 1.5 --max-gripper-step 45 `<br>  --chunks 1 --actions-per-chunk 1 --action-hold-sec 0.04 `<br>  --execute</p>
+<div class="callout">真机执行要求：清空工作空间、降低初始速度、保持急停可达、单人发令、禁止人员进入机械臂运动范围。任何单位、关节顺序、absolute/delta 或相机映射异常都应立即停止。</div>
+<h2 id="section-33">复现结果验证与故障排查</h2>
+<p>复现的目标不是“训练命令成功退出”，而是形成可重复的证据链。建议把验证分为标准仿真、离线模型输出、真实机器人三个层次，并用同一套日志关联。</p>
+<h3 id="section-34">LIBERO 复现结果验证</h3>
+<p>LIBERO 结果用于证明标准化闭环链条可运行。至少报告：代码 commit、config、checkpoint、task suite、评测次数、随机种子、成功率和失败类型。若与官方或他人结果差异很大，先确认评测脚本、任务 suite、checkpoint 和环境版本完全相同，再讨论模型本身。</p>
+<p>若只想验证环境，可先使用官方提供的 π0.5-LIBERO checkpoint 运行 Docker 流程，确认仿真与服务器通信；随后再切换到 π0 checkpoint 进行本章的 π0 复现。这样可以把“LIBERO 环境问题”和“π0 训练问题”分离。</p>
+<h3 id="section-35">Alicia-M 自定义模型实测验证</h3>
+<p>验证顺序为离线 probe、真机 dry-run、单动作、短动作块、连续闭环。</p>
+<h3 id="section-36">训练—推理一致性检查</h3>
+<div class="table-scroll"><table><tr><th><p><strong>项</strong><strong>目</strong></p></th><th><p><strong>训练定义</strong></p></th><th><p><strong>推理/执行要求</strong></p></th></tr><tr><td><p>固定视觉</p></td><td><p>cam_head</p></td><td><p>Orbbec 任务视角 → observation/image</p></td></tr><tr><td><p>腕部视觉</p></td><td><p>cam_wrist</p></td><td><p>RealSense 腕部视角 → observation/wrist_image</p></td></tr><tr><td><p>状态</p></td><td><p>6 关节弧度 + 夹爪</p></td><td><p>顺序、单位、符号和范围完全一致</p></td></tr><tr><td><p>动作</p></td><td><p>7 维绝对目标</p></td><td><p>不得重复反归一化或误作 delta</p></td></tr><tr><td><p>任务文本</p></td><td><p>数据集 task</p></td><td><p>prompt 语义保持一致</p></td></tr><tr><td><p>时序</p></td><td><p>30 FPS，horizon=50</p></td><td><p>action-hold 接近采集周期，按 chunk 重规划</p></td></tr><tr><td><p>归一化</p></td><td><p>Checkpoint assets 中的 norm_stats</p></td><td><p>服务必须加载同一份资产</p></td></tr></table></div>
+<h2 id="section-37">本章小结</h2>
+<p>π0 的复现应被视为一条端到端工程链，而不是单独的“训练脚本复现”。模型层面需要理解 VLM 主干、动作专家、Action Chunk 和流匹配；工程层面需要保证 OpenPI 版本、数据字段、动作空间、norm stats、训练 config、Policy Server 和客户端控制协议一致。LIBERO 为这条链提供标准化中间检查点：先通过标准仿真验证模型与软件，再迁移到自定义数据和真实机器人，可显著降低排错复杂度。</p>
+<p>最终的复现成功应满足三个条件：其一，训练过程可重现，配置、数据版本、日志和 checkpoint 可追溯；其二，推理链可重现，同一 observation 能稳定得到格式与数值合理的 Action Chunk；其三，任务效果可重现，在固定实验协议下获得稳定的成功率并能解释主要失败类型。只有同时满足这三点，才能从“代码能跑”升级为“系统被真正复现”。</p></div><div class="doc-bottom"><a href="../index.html">返回资源库</a><a href="../../lab/index.html#equipment">实验设备 →</a></div></article><aside class="doc-toc" aria-label="本页目录"><strong>本页目录</strong><a class="" href="#section-1">摘要</a><a class="sub" href="#section-2">复现路线图与完成标准</a><a class="" href="#section-3">π0 模型概述</a><a class="sub" href="#section-4">π0 的基本思想</a><a class="sub" href="#section-5">1.2 模型输入与输出</a><a class="sub" href="#section-6">1.3 模型整体结构</a><a class="sub" href="#section-7">1.4 流匹配动作生成原理</a><a class="" href="#section-8">π0 复现环境与数据准备</a><a class="sub" href="#section-9">软件与硬件环境配置</a><a class="sub" href="#section-10">OpenPI 安装与预训练模型准备</a><a class="sub" href="#section-11">数据集格式与字段说明</a><a class="sub" href="#section-12">状态、动作与归一化处理</a><a class="" href="#section-13">LIBERO 基准复现</a><a class="sub" href="#section-14">LIBERO 基准与任务体系</a><a class="sub" href="#section-15">LIBERO 环境与数据集配置</a><a class="sub" href="#section-16">LIBERO 数据预处理</a><a class="sub" href="#section-17">π0 在 LIBERO 上的微调配置</a><a class="sub" href="#section-18">LIBERO 模型训练与监控</a><a class="sub" href="#section-19">LIBERO 推理与闭环控制</a><a class="sub" href="#section-20">LIBERO 评测与结果复现</a><a class="" href="#section-21">自定义数据 π0 LoRA 微调</a><a class="sub" href="#section-22">数据契约与目录约定</a><a class="sub" href="#section-23">数据适配、Prompt 与动作契约</a><a class="sub" href="#section-24">归一化统计与 LoRA 配置</a><a class="sub" href="#section-25">启动训练与多 GPU 配置</a><a class="sub" href="#section-26">训练监控与实测结果</a><a class="sub" href="#section-27">Checkpoint 校验、选择与续训</a><a class="" href="#section-28">π0 真实机器人部署</a><a class="sub" href="#section-29">架构、占位符与所需文件</a><a class="sub" href="#section-30">服务端模型加载与启动</a><a class="sub" href="#section-31">Windows 客户端与双相机输入</a><a class="sub" href="#section-32">分阶段联调与安全执行</a><a class="" href="#section-33">复现结果验证与故障排查</a><a class="sub" href="#section-34">LIBERO 复现结果验证</a><a class="sub" href="#section-35">Alicia-M 自定义模型实测验证</a><a class="sub" href="#section-36">训练—推理一致性检查</a><a class="" href="#section-37">本章小结</a></aside></main><footer class="foot"><div class="wrap"><div class="foot-grid"><div><strong>智能物流系统北京市重点实验室</strong><p>北京物资学院 · 计算机与人工智能学院</p></div><div class="foot-links"><a href="../../lab/index.html">实验室主页</a><a href="https://www.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学校官网</a><a href="https://xxxy.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学院官网</a><a href="../sources.html">资料来源</a></div></div><div class="foot-bottom"><span>© 2026 智能物流系统北京市重点实验室</span><span>公开访问 · 文档与资料索引</span></div></div></footer></body></html>

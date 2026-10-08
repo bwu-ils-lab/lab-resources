@@ -1,0 +1,416 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alicia-D / M：ACT 模仿学习全流程 · 智能物流系统北京市重点实验室</title><meta name="description" content="设备检测、遥操作采集、GPU 训练、真机推理与常见问题。"><meta name="theme-color" content="#123c57"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="../assets/seal.webp" type="image/webp"><link rel="stylesheet" href="../assets/site.css"><script src="../assets/site.js" defer></script></head><body class="resource-body"><a class="skip" href="#main">跳到正文</a><div class="resource-header"><div class="institution"><div class="wrap"><span>北京物资学院 · 计算机与人工智能学院</span><span class="institution-en">BEIJING WUZI UNIVERSITY</span></div></div><header class="topbar"><div class="wrap"><a class="brand" href="../index.html"><img src="../assets/seal.webp" alt="北京物资学院" class="" fetchpriority="high" decoding="async"><span><strong>实验室资源库</strong><small>智能物流系统北京市重点实验室</small></span></a><button class="menu-toggle" aria-label="展开导航" aria-expanded="false" aria-controls="site-nav">菜单</button><nav class="nav" id="site-nav" aria-label="主导航"><a href="../index.html" class="">全部资源</a><a href="../index.html?category=机械臂与模仿学习" class="">复现手册</a><a href="../index.html?category=研究进展" class="">研究资料</a><a class="portal" href="../../lab/index.html">实验室主页</a></nav></div></header></div><main id="main" class="doc-layout"><article class="doc-article"><div class="doc-heading"><div class="breadcrumb"><a href="../index.html">资源库</a> / 机械臂与模仿学习</div><h1>Alicia-D / M：ACT 模仿学习全流程</h1><p>设备检测、遥操作采集、GPU 训练、真机推理与常见问题。</p><div class="doc-meta"><span class="type-badge">复现手册</span><button class="print-button" data-print>打印 / 保存 PDF</button></div><div class="tags"><a href="../../lab/equipment/alicia.html" class="tag">Alicia-D / Alicia-M 示教与操作平台</a></div></div><div class="notice">来源：团队操作手册。用户名、服务器地址与 SSH 别名为通用示例，运行前替换为本机参数；流程未在本站逐项验证。</div><div class="article-content"><p><strong>Alicia-D → Alicia-M</strong></p>
+<p><strong>基于 LeRobot 与 ACT 的模仿学习全流程操作手册</strong></p>
+<p>从概念理解、数据采集、服务器训练到真机推理</p>
+<div class="table-scroll"><table><tr><th><p><strong>设备检测</strong></p></th><th><p><strong>遥操作采集</strong></p></th><th><p><strong>数据校验</strong></p></th><th><p><strong>GPU训练</strong></p></th><th><p><strong>模型验证</strong></p></th><th><p><strong>真机推理</strong></p></th></tr></table></div>
+<p>依据玄雅 Alicia-M 官方文档，并结合本项目实际操作参数整理</p>
+<h2 id="section-1">文档说明</h2>
+<p>本手册面向第一次接触机器人模仿学习的使用者。正文将“为什么做、模型学什么、命令怎么运行、结果如何判断”放在同一条流程中，并明确区分官方推荐参数与本项目实际参数。</p>
+<div class="callout">使用原则：设备编号、串口号和相机路径每次都先检测，再填入命令；不要把终端提示符或命令输出一起复制回终端。</div>
+<h2 id="section-2">目录</h2>
+<div class="table-scroll"><table><tr><th><p><strong>章节</strong></p></th><th><p><strong>内容</strong></p></th></tr><tr><td><p><strong>1</strong></p></td><td><p><strong>项目目标与完整流程</strong></p></td></tr><tr><td><p><strong>2</strong></p></td><td><p><strong>基础概念：模仿学习、ACT、VLA与世界模型</strong></p></td></tr><tr><td><p><strong>3</strong></p></td><td><p><strong>实验设备、软件与项目路径</strong></p></td></tr><tr><td><p><strong>4</strong></p></td><td><p><strong>机械臂电脑安装 LeRobot 环境</strong></p></td></tr><tr><td><p><strong>5</strong></p></td><td><p><strong>每次实验前检测设备</strong></p></td></tr><tr><td><p><strong>6</strong></p></td><td><p><strong>遥操作测试与正式数据采集</strong></p></td></tr><tr><td><p><strong>7</strong></p></td><td><p><strong>数据集检查与上传服务器</strong></p></td></tr><tr><td><p><strong>8</strong></p></td><td><p><strong>服务器训练环境与 GPU 检查</strong></p></td></tr><tr><td><p><strong>9</strong></p></td><td><p><strong>ACT 训练、监控与检查点管理</strong></p></td></tr><tr><td><p><strong>10</strong></p></td><td><p><strong>训练结果完整性验证</strong></p></td></tr><tr><td><p><strong>11</strong></p></td><td><p><strong>模型下载与真机推理</strong></p></td></tr><tr><td><p><strong>12</strong></p></td><td><p><strong>推理评估、补采与迭代</strong></p></td></tr><tr><td><p><strong>13</strong></p></td><td><p><strong>常见问题与故障排查</strong></p></td></tr><tr><td><p><strong>附录</strong></p></td><td><p><strong>完整命令速查与参考资料</strong></p></td></tr></table></div>
+<h2 id="section-3">1. 项目目标与完整流程</h2>
+<p>本项目使用 Alicia-D 示教臂遥操作 Alicia-M 操作臂，采集两路相机图像、机械臂状态与专家动作；随后在 RTX 4090 服务器上训练 ACT 策略，最终让 Alicia-M 在不依赖人工遥操作的情况下自主完成药盒抓取与放置。</p>
+<div class="table-scroll"><table><tr><th><p><strong>阶段</strong></p></th><th><p><strong>输入</strong></p></th><th><p><strong>主要操作</strong></p></th><th><p><strong>输出</strong></p></th></tr><tr><td><p><strong>1. 设备检测</strong></p></td><td><p><strong>机械臂、双相机</strong></p></td><td><p><strong>确认视频设备与串口</strong></p></td><td><p><strong>可用设备路径</strong></p></td></tr><tr><td><p><strong>2. 遥操采集</strong></p></td><td><p><strong>人类示范</strong></p></td><td><p><strong>Alicia-D 控制 Alicia-M</strong></p></td><td><p><strong>LeRobotDataset</strong></p></td></tr><tr><td><p><strong>3. 数据检查</strong></p></td><td><p><strong>采集目录</strong></p></td><td><p><strong>检查 episode、帧数、相机键</strong></p></td><td><p><strong>可训练数据集</strong></p></td></tr><tr><td><p><strong>4. ACT 训练</strong></p></td><td><p><strong>图像、状态、动作</strong></p></td><td><p><strong>离线监督训练 50000 步</strong></p></td><td><p><strong>模型检查点</strong></p></td></tr><tr><td><p><strong>5. 真机推理</strong></p></td><td><p><strong>训练模型与实时观测</strong></p></td><td><p><strong>ACT 输出动作块</strong></p></td><td><p><strong>自主抓放</strong></p></td></tr><tr><td><p><strong>6. 评估迭代</strong></p></td><td><p><strong>多次推理结果</strong></p></td><td><p><strong>统计失败类型并补采</strong></p></td><td><p><strong>更稳的策略</strong></p></td></tr></table></div>
+<h2 id="section-4">2. 基础概念：模仿学习、ACT、VLA与世界模型</h2>
+<h3 id="section-5">2.1 什么是模仿学习</h3>
+<p>模仿学习的核心是让机器人从专家示范中学习“在某种观察下应该执行什么动作”。本项目中的专家是遥操作 Alicia-D 的人，示范由两路相机、Alicia-M 当前状态以及实际下发动作共同组成。</p>
+<div class="callout">observation（图像 + 机器人状态）  →  expert action（关节 + 夹爪动作）</div>
+<h3 id="section-6">2.2 ACT 的定位</h3>
+<p>ACT（Action Chunking with Transformers）是一种视觉条件下的机器人模仿学习策略。它不是轨迹播放器，而是一个从当前观测到未来动作序列的策略网络。ACT 一次预测若干连续动作，即“动作块”，以降低长任务的有效决策长度并提高动作连续性。[2][3]</p>
+<div class="callout">πθ(I_t, q_t)  →  â_t, â_{t+1}, …, â_{t+K-1}</div>
+<p>ACT模型在时刻读取当前相机画面和机械臂状态，然后一次性预测未来连续步的机械臂动作。</p>
+<div class="table-scroll"><table><tr><th><p><strong>项目</strong></p></th><th><p><strong>ACT 中的含义</strong></p></th></tr><tr><td><p><strong>I_t</strong></p></td><td><p><strong>当前 front 与 wrist 相机图像</strong></p></td></tr><tr><td><p><strong>q_t</strong></p></td><td><p><strong>Alicia-M 当前关节和夹爪状态</strong></p></td></tr><tr><td><p><strong>â</strong></p></td><td><p><strong>模型预测的关节与夹爪动作</strong></p></td></tr><tr><td><p><strong>K</strong></p></td><td><p><strong>一个动作块包含的未来动作步数</strong></p></td></tr></table></div>
+<h3 id="section-7">2.3 ACT 不只是“依葫芦画瓢”</h3>
+<p>ACT 确实以专家动作为监督目标，但它学习的是条件映射，而不是按时间回放某一条录像。只要药盒位置、相机视角和机械臂状态仍处于训练数据覆盖范围，模型可能生成训练集中没有完全出现过的新轨迹；但当场景、物体或起始姿态偏离训练分布较大时，成功率会明显下降。</p>
+<div class="callout">准确定位：ACT 是训练分布内的专用视觉动作策略，擅长固定机器人、固定任务和有限场景变化，不等于通用机器人智能。</div>
+<h3 id="section-8">2.4 ACT 与 VLA 的边界</h3>
+<p>VLA（Vision-Language-Action）强调视觉、语言和动作的联合建模。典型 VLA 会把自然语言指令作为真正的模型输入，并通过大规模多任务预训练获得语义与泛化能力；适配新机器人时常从预训练参数开始微调。OpenVLA 等工作即采用大规模机器人示范预训练，再面向新设置进行微调。[4]</p>
+<div class="table-scroll"><table><tr><th><p><strong>维度</strong></p></th><th><p><strong>ACT</strong></p></th><th><p><strong>VLA</strong></p></th></tr><tr><td><p><strong>主要输入</strong></p></td><td><p><strong>图像、机器人状态</strong></p></td><td><p><strong>图像、语言指令、机器人状态</strong></p></td></tr><tr><td><p><strong>主要输出</strong></p></td><td><p><strong>连续动作块</strong></p></td><td><p><strong>受语言条件约束的机器人动作</strong></p></td></tr><tr><td><p><strong>常见训练方式</strong></p></td><td><p><strong>单任务数据从头训练</strong></p></td><td><p><strong>基础模型预训练后微调</strong></p></td></tr><tr><td><p><strong>任务范围</strong></p></td><td><p><strong>单任务或少量固定任务</strong></p></td><td><p><strong>多任务、多物体、多指令</strong></p></td></tr><tr><td><p><strong>语言作用</strong></p></td><td><p><strong>通常只是元数据</strong></p></td><td><p><strong>直接影响动作预测</strong></p></td></tr><tr><td><p><strong>泛化目标</strong></p></td><td><p><strong>训练分布内稳定执行</strong></p></td><td><p><strong>跨任务、跨物体、跨场景泛化</strong></p></td></tr></table></div>
+<div class="callout">判断边界：是否使用 Transformer 不是关键；关键是语言是否真正进入模型、是否在多任务数据上学习，以及不同语言是否会产生不同动作。</div>
+<h3 id="section-9">2.5 什么是世界模型</h3>
+<p>世界模型关注“执行某个动作后，环境会怎样变化”。它通常学习动作条件下的未来状态、未来图像或潜在表示，可用于预测、规划、仿真和评估。[5]</p>
+<div class="callout">world model：当前状态 s_t + 动作 a_t  →  未来状态或未来图像 s_{t+1}</div>
+<div class="table-scroll"><table><tr><th><p><strong>模型</strong></p></th><th><p><strong>核心问题</strong></p></th><th><p><strong>典型映射</strong></p></th></tr><tr><td><p><strong>ACT</strong></p></td><td><p><strong>专家在这种情况下会怎么动？</strong></p></td><td><p><strong>观察 → 动作块</strong></p></td></tr><tr><td><p><strong>VLA</strong></p></td><td><p><strong>根据视觉和语言应该完成什么并怎么动？</strong></p></td><td><p><strong>视觉 + 语言 + 状态 → 动作</strong></p></td></tr><tr><td><p><strong>世界模型</strong></p></td><td><p><strong>这样动以后会发生什么？</strong></p></td><td><p><strong>状态 + 动作 → 未来状态</strong></p></td></tr></table></div>
+<h3 id="section-10">2.6 学习 ACT 对 VLA 与世界模型的启发</h3>
+<p>理解机器人数据不是单独的视频，而是图像、状态、动作、时间戳与episode边界的同步组合。</p>
+<p>理解observation与action的时间对齐；模型再大，图像和动作错位仍然无法正确学习。</p>
+<p>理解动作表示：关节绝对位置、增量、末端位姿、速度和动作块会直接影响学习难度。</p>
+<p>理解训练与推理分布偏移：推理时模型会进入由自身动作产生的新状态，误差会逐步累积。</p>
+<p>理解真机闭环：相机读取、状态读取、模型推理、动作下发、控制频率与安全限幅。</p>
+<p>同一份序列数据既可训练ACT的观察→动作，也可用于世界模型的状态+动作→未来状态。</p>
+<div class="callout">本项目为什么先做 ACT：当前数据是固定机械臂、固定双相机、单一药盒任务和 30 条示范，最适合先跑通专用策略的完整闭环；完成后再扩展多任务语言数据，微调 VLA，或研究未来状态预测。</div>
+<h2 id="section-11">3. 实验设备、软件与项目路径</h2>
+<h3 id="section-12">3.1 硬件与任务</h3>
+<div class="table-scroll"><table><tr><th><p><strong>类别</strong></p></th><th><p><strong>本项目配置</strong></p></th></tr><tr><td><p><strong>示教臂（Leader）</strong></p></td><td><p><strong>Alicia-D</strong></p></td></tr><tr><td><p><strong>操作臂（Follower）</strong></p></td><td><p><strong>Alicia-M</strong></p></td></tr><tr><td><p><strong>外部相机（front）</strong></p></td><td><p><strong>icspring USB 相机</strong></p></td></tr><tr><td><p><strong>腕部相机（wrist）</strong></p></td><td><p><strong>Intel RealSense D405</strong></p></td></tr><tr><td><p><strong>机械臂电脑</strong></p></td><td><p><strong>Ubuntu 24.04，连接机械臂与相机</strong></p></td></tr><tr><td><p><strong>训练服务器</strong></p></td><td><p><strong>NVIDIA GeForce RTX 4090，约 24 GB 显存</strong></p></td></tr><tr><td><p><strong>任务</strong></p></td><td><p><strong>抓取桌面药盒并放入目标区域</strong></p></td></tr></table></div>
+<h3 id="section-13">3.2 当前项目关键参数</h3>
+<div class="table-scroll"><table><tr><th><p><strong>参数</strong></p></th><th><p><strong>当前值</strong></p></th><th><p><strong>说明</strong></p></th></tr><tr><td><p><strong>数据集名称</strong></p></td><td><p><strong>medicine_box_keyboard_test_v0</strong></p></td><td><p><strong>名称不影响训练，但后续路径需保持一致</strong></p></td></tr><tr><td><p><strong>episode 数</strong></p></td><td><p><strong>30</strong></p></td><td><p><strong>专家示范回合数</strong></p></td></tr><tr><td><p><strong>总帧数</strong></p></td><td><p><strong>12028</strong></p></td><td><p><strong>info.json 记录</strong></p></td></tr><tr><td><p><strong>帧率</strong></p></td><td><p><strong>30 FPS</strong></p></td><td><p><strong>采集、训练和推理保持一致</strong></p></td></tr><tr><td><p><strong>训练步数</strong></p></td><td><p><strong>50000</strong></p></td><td><p><strong>一次参数更新记为一步</strong></p></td></tr><tr><td><p><strong>batch size</strong></p></td><td><p><strong>32</strong></p></td><td><p><strong>本项目 RTX 4090 实际使用值</strong></p></td></tr><tr><td><p><strong>保存频率</strong></p></td><td><p><strong>每 5000 步</strong></p></td><td><p><strong>生成一个 checkpoint</strong></p></td></tr></table></div>
+<h3 id="section-14">3.3 目录约定</h3>
+<div class="table-scroll"><table><tr><th><p><strong>位置</strong></p></th><th><p><strong>用途</strong></p></th></tr><tr><td><p><strong>~/lerobot</strong></p></td><td><p><strong>机械臂电脑上的 Synria LeRobot 源码</strong></p></td></tr><tr><td><p><strong>~/lerobot/data/medicine_box_keyboard_test_v0</strong></p></td><td><p><strong>本地采集数据集</strong></p></td></tr><tr><td><p><strong>/workspace/alicia_act/lerobot</strong></p></td><td><p><strong>服务器 LeRobot 源码</strong></p></td></tr><tr><td><p><strong>/workspace/miniforge3/envs/alicia_act</strong></p></td><td><p><strong>服务器 Conda 环境</strong></p></td></tr><tr><td><p><strong>/workspace/alicia_act/data/medicine_box_keyboard_test_v0</strong></p></td><td><p><strong>服务器训练数据</strong></p></td></tr><tr><td><p><strong>/workspace/alicia_act/outputs/act_medicine_box_v0</strong></p></td><td><p><strong>ACT 训练输出</strong></p></td></tr><tr><td><p><strong>/workspace/alicia_act/logs/act_medicine_box_v0.log</strong></p></td><td><p><strong>训练日志</strong></p></td></tr></table></div>
+<h2 id="section-15">4. 机械臂电脑安装 LeRobot 环境</h2>
+<p>玄雅官方文档使用 Python 3.11，并安装 Synria-Robotics/lerobot 的 v6.1.1-beta 分支。[1] 环境只需安装一次。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>创建并安装环境
+conda create -n lerobot python=3.11 -y
+conda activate lerobot
+
+cd ~
+git clone https://github.com/Synria-Robotics/lerobot.git -b v6.1.1-beta
+cd ~/lerobot
+python -m pip install -e .</code></pre></div>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>验证安装
+lerobot-record --help
+lerobot-train --help
+python -c &quot;import alicia_d_sdk, alicia_m_sdk; print(&#x27;Alicia SDKs OK&#x27;)&quot;</code></pre></div>
+<div class="callout">判断标准：命令能正常显示帮助信息，并输出 Alicia SDKs OK，即可认为 LeRobot 与两套机械臂 SDK 安装成功。</div>
+<h2 id="section-16">5. 每次实验前检测设备</h2>
+<div class="callout">必须执行：相机 /dev/video* 与串口 /dev/ttyACM* 可能随 USB 插拔变化。正式命令中只使用本次实际检测到的设备。</div>
+<h3 id="section-17">5.1 进入环境</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source ~/miniconda3/etc/profile.d/conda.sh
+conda activate lerobot
+cd ~/lerobot</code></pre></div>
+<h3 id="section-18">5.2 检测相机</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>直接在终端检测设备和参数
+v4l2-ctl --list-devices
+lerobot-find-cameras opencv</code></pre></div>
+<p>需要实际查看画面时，使用官方仓库提供的相机检测文件；在窗口中按 q 依次查看下一路相机。[1]</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>python examples/camera/camera_detection.py</code></pre></div>
+<div class="callout">本项目一次检测结果：front=/dev/video4，wrist=/dev/video10。该结果仅供本次连接参考，不应写成永久固定值。</div>
+<h3 id="section-19">5.3 检测机械臂串口</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>ls /dev/ttyACM*
+ls -l /dev/serial/by-id/</code></pre></div>
+<p>官方建议先连接 Alicia-M，再连接 Alicia-D，通过新增端口判断对应关系；设备编号顺序不固定。[1] 本项目使用 /dev/serial/by-id/ 稳定路径，便于减少 ttyACM 编号变化带来的误接。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>本项目当前串口标识
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00</code></pre></div>
+<h3 id="section-20">5.4 设置本次临时变量并检查占用</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>FRONT_CAMERA=/dev/video4
+WRIST_CAMERA=/dev/video10
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00
+
+echo &quot;外部相机：$FRONT_CAMERA&quot;
+echo &quot;腕部相机：$WRIST_CAMERA&quot;
+echo &quot;操作臂：$FOLLOWER_PORT&quot;
+echo &quot;示教臂：$LEADER_PORT&quot;
+
+sudo fuser -v &quot;$FRONT_CAMERA&quot; &quot;$WRIST_CAMERA&quot; &quot;$FOLLOWER_PORT&quot; &quot;$LEADER_PORT&quot;</code></pre></div>
+<div class="callout">判断标准：fuser 没有输出表示设备未被其他程序占用。相机预览结束后必须按 q 退出并释放设备，再开始采集。</div>
+<h2 id="section-21">6. 遥操作测试与正式数据采集</h2>
+<h3 id="section-22">6.1 先采集 1 个测试回合</h3>
+<p>官方建议先录制 1 个 episode，确认动作方向、夹爪、相机和串口正常后再正式采集。[1]</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>DATASET_NAME=medicine_box_test_v0
+DATASET_ROOT=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+TASK=&quot;pick up the medicine box and place it in the target area&quot;
+
+lerobot-record \
+  --robot.type=alicia_m_follower \
+  --robot.port=&quot;$FOLLOWER_PORT&quot; \
+  --robot.cameras=&quot;{front: {type: opencv, index_or_path: $FRONT_CAMERA, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: $WRIST_CAMERA, width: 640, height: 480, fps: 30}}&quot; \
+  --robot.id=alicia_m \
+  --teleop.type=alicia_d_leader \
+  --teleop.port=&quot;$LEADER_PORT&quot; \
+  --teleop.gripper_type=50mm \
+  --teleop.directly_controls_robot=false \
+  --teleop.target_follower_type=alicia_m \
+  --teleop.id=alicia_d \
+  --dataset.repo_id=&quot;labuser/$DATASET_NAME&quot; \
+  --dataset.root=&quot;$DATASET_ROOT&quot; \
+  --dataset.num_episodes=1 \
+  --dataset.single_task=&quot;$TASK&quot; \
+  --dataset.episode_time_s=30 \
+  --dataset.reset_time_s=15 \
+  --display_data=true \
+  --dataset.push_to_hub=false</code></pre></div>
+<h3 id="section-23">6.2 正式采集 30 个 episode</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+TASK=&quot;pick up the medicine box and place it in the target area&quot;
+
+lerobot-record \
+  --robot.type=alicia_m_follower \
+  --robot.port=&quot;$FOLLOWER_PORT&quot; \
+  --robot.cameras=&quot;{front: {type: opencv, index_or_path: $FRONT_CAMERA, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: $WRIST_CAMERA, width: 640, height: 480, fps: 30}}&quot; \
+  --robot.id=alicia_m \
+  --teleop.type=alicia_d_leader \
+  --teleop.port=&quot;$LEADER_PORT&quot; \
+  --teleop.gripper_type=50mm \
+  --teleop.directly_controls_robot=false \
+  --teleop.target_follower_type=alicia_m \
+  --teleop.id=alicia_d \
+  --dataset.repo_id=&quot;labuser/$DATASET_NAME&quot; \
+  --dataset.root=&quot;$DATASET_ROOT&quot; \
+  --dataset.num_episodes=30 \
+  --dataset.single_task=&quot;$TASK&quot; \
+  --dataset.episode_time_s=60 \
+  --dataset.reset_time_s=15 \
+  --display_data=false \
+  --dataset.push_to_hub=false</code></pre></div>
+<div class="callout">官方与项目差异：官方示例为每条 30 秒且 display_data=true；本项目因动作耗时与键盘焦点问题，将单条上限设为 60 秒，并在正式采集时关闭 Rerun。关闭可视化不会改变数据内容。</div>
+<h3 id="section-24">6.3 采集控制键与正确时机</h3>
+<div class="table-scroll"><table><tr><th><p><strong>按键</strong></p></th><th><p><strong>作用</strong></p></th><th><p><strong>使用时机</strong></p></th></tr><tr><td><p><strong>← 左方向键</strong></p></td><td><p><strong>取消当前 episode 并重新录制</strong></p></td><td><p><strong>任务失败、抓空、掉落或动作明显错误</strong></p></td></tr><tr><td><p><strong>→ 右方向键</strong></p></td><td><p><strong>提前结束并保存当前 episode</strong></p></td><td><p><strong>任务提前成功完成</strong></p></td></tr><tr><td><p><strong>Esc</strong></p></td><td><p><strong>停止整个采集任务</strong></p></td><td><p><strong>准备结束当前采集会话</strong></p></td></tr><tr><td><p><strong>Ctrl+C</strong></p></td><td><p><strong>强制终止程序</strong></p></td><td><p><strong>异常运动或安全风险</strong></p></td></tr></table></div>
+<div class="callout">注意：按的是实体键盘左右方向键，不是 Rerun 界面的播放按钮。只有出现 Recording episode N 时才使用左右键；Reset the environment 和视频编码阶段不要重复按键。</div>
+<h3 id="section-25">6.4 数据质量标准</h3>
+<p>每条 episode 从相近的安全起始姿态开始，并完整完成抓取、抬起、移动和放置。</p>
+<p>保留成功、流畅且目标明确的示范；失败、长时间停顿、无关动作和碰撞应重录。</p>
+<p>人可以直接看真实药盒操作，但模型所需信息必须同时出现在两路相机画面中。</p>
+<p>相机和机械臂底座在正式采集、训练数据生成和推理期间尽量保持不变。</p>
+<h2 id="section-26">7. 数据集检查与上传服务器</h2>
+<h3 id="section-27">7.1 检查数据集总体信息</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+
+du -sh &quot;$DATASET_ROOT&quot;
+grep -E &#x27;&quot;total_episodes&quot;|&quot;total_frames&quot;|&quot;fps&quot;&#x27; \
+  &quot;$DATASET_ROOT/meta/info.json&quot;
+grep -nE &#x27;observation.images.(front|wrist)&#x27; \
+  &quot;$DATASET_ROOT/meta/info.json&quot;
+find &quot;$DATASET_ROOT&quot; -type f -name &quot;*.parquet&quot; | sort
+find &quot;$DATASET_ROOT&quot; -type f -name &quot;*.mp4&quot; | sort</code></pre></div>
+<div class="callout">本项目检查结果：total_episodes=30，total_frames=12028，fps=30；info.json 同时包含 observation.images.front 与 observation.images.wrist。</div>
+<p>新版 LeRobotDataset 会将多个 episode 分块存入少量 Parquet 和 MP4 文件，因此文件数量不需要等于 episode 数量。</p>
+<h3 id="section-28">7.2 通过 VS Code / SSH 上传服务器</h3>
+<p>上传命令必须在本机终端执行，提示符应为 labuser@labuser-ThinkBook...，而不是服务器容器中的 root@...。本项目 SSH 别名为 lab-gpu。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>DATASET_NAME=medicine_box_keyboard_test_v0
+LOCAL_DATASET=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+
+ssh lab-gpu &quot;mkdir -p /workspace/alicia_act/data&quot;
+scp -r &quot;$LOCAL_DATASET&quot; lab-gpu:/workspace/alicia_act/data/</code></pre></div>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>服务器端检查
+DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;/workspace/alicia_act/data/$DATASET_NAME&quot;
+
+du -sh &quot;$DATASET_ROOT&quot;
+grep -E &#x27;&quot;total_episodes&quot;|&quot;total_frames&quot;|&quot;fps&quot;&#x27; \
+  &quot;$DATASET_ROOT/meta/info.json&quot;</code></pre></div>
+<h2 id="section-29">8. 服务器训练环境与 GPU 检查</h2>
+<h3 id="section-30">8.1 创建独立 Conda 环境</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source /workspace/miniforge3/etc/profile.d/conda.sh
+conda create -n alicia_act python=3.11 -y
+conda activate alicia_act
+python --version</code></pre></div>
+<h3 id="section-31">8.2 安装 LeRobot</h3>
+<p>服务器访问 GitHub 不稳定时，可将本机同一份 LeRobot 源码上传，再在服务器环境中执行可编辑安装。这样既节省重复下载，也避免本机与服务器分支不一致。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code># 本机执行：只上传源码，不重复上传 data、outputs 和 .git
+cd &quot;$HOME&quot;
+tar \
+  --exclude=&#x27;lerobot/data&#x27; \
+  --exclude=&#x27;lerobot/outputs&#x27; \
+  --exclude=&#x27;lerobot/.git&#x27; \
+  --exclude=&#x27;*/__pycache__&#x27; \
+  -czf - lerobot | \
+ssh lab-gpu &#x27;mkdir -p /workspace/alicia_act &amp;&amp; tar -xzf - -C /workspace/alicia_act&#x27; </code></pre></div>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code># 服务器执行
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+cd /workspace/alicia_act/lerobot
+
+python -m pip install -e . \
+  -i https://pypi.tuna.tsinghua.edu.cn/simple \
+  --timeout 120 \
+  --retries 10</code></pre></div>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>验证 LeRobot
+which lerobot-train
+python -c &quot;import lerobot; print(&#x27;LeRobot OK&#x27;)&quot;</code></pre></div>
+<h3 id="section-32">8.3 检查 GPU</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>nvidia-smi
+python -c &quot;import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else &#x27;无GPU&#x27;)&quot;</code></pre></div>
+<div class="callout">必须满足：nvidia-smi 能识别 RTX 4090，torch.cuda.is_available() 输出 True，才开始训练。<br>NVML Unknown Error：该错误表示当前容器暂时无法访问 GPU，通常需要重启或重新挂载 GPU 容器；重新安装 PyTorch不能解决宿主机 GPU 权限问题。</div>
+<h2 id="section-33">9. ACT 训练、监控与检查点管理</h2>
+<h3 id="section-34">9.1 训练命令</h3>
+<p>玄雅官方推荐首次 ACT 训练使用 50000 步、每 5000 步保存一次，并关闭仿真评估。[1] 官方示例 batch size 为 16；本项目 RTX 4090 实际使用 32。</p>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+cd /workspace/alicia_act/lerobot
+
+DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;/workspace/alicia_act/data/$DATASET_NAME&quot;
+OUTPUT_DIR=&quot;/workspace/alicia_act/outputs/act_medicine_box_v0&quot;
+LOG_DIR=&quot;/workspace/alicia_act/logs&quot;
+LOG_FILE=&quot;$LOG_DIR/act_medicine_box_v0.log&quot;
+
+mkdir -p &quot;$LOG_DIR&quot;
+
+nohup env \
+  CUDA_VISIBLE_DEVICES=0 \
+  PYTHONUNBUFFERED=1 \
+  lerobot-train \
+    --dataset.repo_id=&quot;labuser/$DATASET_NAME&quot; \
+    --dataset.root=&quot;$DATASET_ROOT&quot; \
+    --dataset.video_backend=pyav \
+    --policy.type=act \
+    --policy.device=cuda \
+    --policy.push_to_hub=false \
+    --output_dir=&quot;$OUTPUT_DIR&quot; \
+    --job_name=act_medicine_box_v0 \
+    --steps=50000 \
+    --batch_size=32 \
+    --save_freq=5000 \
+    --log_freq=100 \
+    --eval_freq=0 \
+    --wandb.enable=false \
+  &gt; &quot;$LOG_FILE&quot; 2&gt;&amp;1 &amp;
+
+TRAIN_PID=$!
+echo &quot;$TRAIN_PID&quot; &gt; /workspace/alicia_act/act_medicine_box_v0.pid</code></pre></div>
+<h3 id="section-35">9.2 训练过程如何理解</h3>
+<p>从 30 条演示中随机抽取一批时间点和对应动作块。</p>
+<p>读取 front、wrist 图像和当前机器人状态。</p>
+<p>ACT 预测未来连续关节与夹爪动作。</p>
+<p>将预测动作与专家真实动作比较，计算 loss。</p>
+<p>反向传播并更新一次模型参数；这就是 1 个 training step。</p>
+<div class="callout">50000 步的含义：不是 50000 次真机任务，也不是 50000 条数据，而是对模型参数进行 50000 次批量更新。</div>
+<h3 id="section-36">9.3 查看日志和训练状态</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>TRAIN_PID=$(cat /workspace/alicia_act/act_medicine_box_v0.pid)
+ps -fp &quot;$TRAIN_PID&quot;
+tail -f /workspace/alicia_act/logs/act_medicine_box_v0.log
+nvidia-smi</code></pre></div>
+<p>在 tail -f 中按 Ctrl+C 只会停止查看日志；由于训练通过 nohup 在后台运行，关闭 VS Code 或断开 SSH 不会停止训练。</p>
+<div class="table-scroll"><table><tr><th><p><strong>日志字段</strong></p></th><th><p><strong>含义</strong></p></th></tr><tr><td><p><strong>step</strong></p></td><td><p><strong>模型参数更新步数；2K 表示 2000 步</strong></p></td></tr><tr><td><p><strong>smpl</strong></p></td><td><p><strong>累计使用的训练样本量</strong></p></td></tr><tr><td><p><strong>epch</strong></p></td><td><p><strong>相当于遍历数据集的轮数</strong></p></td></tr><tr><td><p><strong>loss</strong></p></td><td><p><strong>动作预测误差；整体下降通常是积极信号</strong></p></td></tr><tr><td><p><strong>grdn</strong></p></td><td><p><strong>梯度范数，用于观察梯度是否异常</strong></p></td></tr><tr><td><p><strong>lr</strong></p></td><td><p><strong>学习率</strong></p></td></tr><tr><td><p><strong>updt_s</strong></p></td><td><p><strong>每次模型更新耗时</strong></p></td></tr><tr><td><p><strong>data_s</strong></p></td><td><p><strong>每次数据读取耗时</strong></p></td></tr></table></div>
+<h3 id="section-37">9.4 检查点与空间管理</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>find /workspace/alicia_act/outputs/act_medicine_box_v0/checkpoints \
+  -mindepth 1 -maxdepth 1 -printf &#x27;%f -&gt; %l
+&#x27; | sort</code></pre></div>
+<p>训练会生成 005000、010000、…、050000 及 last。推理只需最终 pretrained_model；若旧任务只保留推理能力，可删除中间 checkpoint 和最终 checkpoint 中的 training_state，但删除 training_state 后不能从该点续训。</p>
+<h2 id="section-38">10. 训练结果完整性验证</h2>
+<div class="callout">目标：不连接真机也能确认训练是否跑到 50K、是否存在最终检查点、配置和权重文件是否可读。</div>
+<h3 id="section-39">10.1 确认训练结束与日志</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>TRAIN_PID=$(cat /workspace/alicia_act/act_medicine_box_v0.pid)
+ps -fp &quot;$TRAIN_PID&quot; || echo &quot;训练进程已结束&quot;
+
+LOG_FILE=/workspace/alicia_act/logs/act_medicine_box_v0.log
+tail -n 30 &quot;$LOG_FILE&quot;
+grep -E &#x27;step:[0-9.]+[KkMm]?&#x27; &quot;$LOG_FILE&quot; | tail -n 5
+grep -iE &#x27;traceback|cuda out of memory|runtimeerror|exception|error|nan&#x27; &quot;$LOG_FILE&quot; | tail -n 30</code></pre></div>
+<div class="callout">合格标准：最后训练进度达到 step:50K；没有 Traceback、CUDA OOM、RuntimeError 或 NaN。普通 UserWarning 不等于训练失败。</div>
+<h3 id="section-40">10.2 检查最终模型文件</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>OUTPUT_DIR=/workspace/alicia_act/outputs/act_medicine_box_v0
+CHECKPOINT_DIR=&quot;$OUTPUT_DIR/checkpoints&quot;
+POLICY_PATH=&quot;$CHECKPOINT_DIR/last/pretrained_model&quot;
+
+readlink -f &quot;$CHECKPOINT_DIR/last&quot;
+ls -lh &quot;$POLICY_PATH&quot;
+ls -lh &quot;$POLICY_PATH/config.json&quot; &quot;$POLICY_PATH/model.safetensors&quot;</code></pre></div>
+<div class="callout">模型目录至少应包含：config.json、model.safetensors；玄雅官方文档还要求确认 train_config.json。[1]</div>
+<h3 id="section-41">10.3 读取配置与 safetensors 完整性</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+
+python - &lt;&lt;&#x27;PY&#x27;
+import json
+from pathlib import Path
+from safetensors import safe_open
+
+p = Path(&#x27;/workspace/alicia_act/outputs/act_medicine_box_v0/checkpoints/last/pretrained_model&#x27;)
+config_file = p / &#x27;config.json&#x27;
+model_file = p / &#x27;model.safetensors&#x27;
+
+assert config_file.is_file(), f&#x27;缺少：{config_file}&#x27;
+assert model_file.is_file(), f&#x27;缺少：{model_file}&#x27;
+
+with config_file.open(&#x27;r&#x27;, encoding=&#x27;utf-8&#x27;) as f:
+    config = json.load(f)
+print(&#x27;配置读取正常；策略类型：&#x27;, config.get(&#x27;type&#x27;, config.get(&#x27;policy_type&#x27;, &#x27;未找到&#x27;)))
+
+with safe_open(model_file, framework=&#x27;pt&#x27;, device=&#x27;cpu&#x27;) as f:
+    keys = list(f.keys())
+print(&#x27;权重读取正常；张量数量：&#x27;, len(keys))
+print(&#x27;最终模型完整性检查通过&#x27;)
+PY</code></pre></div>
+<h2 id="section-42">11. 模型下载与真机推理</h2>
+<h3 id="section-43">11.1 将模型下载回机械臂电脑</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code># 在本机终端执行
+mkdir -p &quot;$HOME/lerobot/models/act_medicine_box_v0&quot;
+scp -r \
+  lab-gpu:/workspace/alicia_act/outputs/act_medicine_box_v0/checkpoints/last/pretrained_model \
+  &quot;$HOME/lerobot/models/act_medicine_box_v0/&quot;
+
+POLICY_PATH=&quot;$HOME/lerobot/models/act_medicine_box_v0/pretrained_model&quot;
+ls -lh &quot;$POLICY_PATH&quot;</code></pre></div>
+<h3 id="section-44">11.2 推理流程</h3>
+<p>推理阶段不再由人拖动 Alicia-D。系统读取实时 front / wrist 图像和 Alicia-M 当前状态，ACT 输出动作块，Alicia-M 执行后再读取新观测，形成闭环。</p>
+<div class="callout">实时图像 + 当前关节状态  →  ACT  →  未来动作块  →  Alicia-M 执行  →  新观测</div>
+<h3 id="section-45">11.3 第一次推理前的安全要求</h3>
+<p>清空机械臂周围杂物，准备随时断电或急停。</p>
+<p>重新检测相机和串口，不能沿用过期的 /dev/video* 与 /dev/ttyACM*。</p>
+<p>保持640×480、30 FPS、采集时的相机位置、机械臂起始姿态、药盒区域与采集阶段一致。</p>
+<h3 id="section-46">11.4 单回合安全推理命令</h3>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code>source ~/miniconda3/etc/profile.d/conda.sh
+conda activate lerobot
+cd ~/lerobot
+
+FRONT_CAMERA=/dev/video4
+WRIST_CAMERA=/dev/video10
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00
+POLICY_PATH=&quot;$HOME/lerobot/models/act_medicine_box_v0/pretrained_model&quot;
+
+EVAL_NAME=&quot;eval_act_medicine_box_v0_$(date +%Y%m%d_%H%M%S)&quot;
+EVAL_ROOT=&quot;$HOME/lerobot/data/$EVAL_NAME&quot;
+TASK=&quot;pick up the medicine box and place it in the target area&quot;
+
+lerobot-record \
+  --policy.path=&quot;$POLICY_PATH&quot; \
+  --policy.device=cuda \
+  --robot.type=alicia_m_follower \
+  --robot.port=&quot;$FOLLOWER_PORT&quot; \
+  --robot.cameras=&quot;{front: {type: opencv, index_or_path: $FRONT_CAMERA, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: $WRIST_CAMERA, width: 640, height: 480, fps: 30}}&quot; \
+  --robot.id=alicia_m \
+  --robot.max_relative_target=8 \
+  --teleop.type=alicia_d_leader \
+  --teleop.port=&quot;$LEADER_PORT&quot; \
+  --teleop.gripper_type=50mm \
+  --teleop.directly_controls_robot=false \
+  --teleop.target_follower_type=alicia_m \
+  --teleop.id=alicia_d \
+  --dataset.repo_id=&quot;labuser/$EVAL_NAME&quot; \
+  --dataset.root=&quot;$EVAL_ROOT&quot; \
+  --dataset.num_episodes=1 \
+  --dataset.single_task=&quot;$TASK&quot; \
+  --dataset.episode_time_s=30 \
+  --dataset.reset_time_s=15 \
+  --display_data=true \
+  --dataset.push_to_hub=false</code></pre></div>
+<div class="callout">最关键参数：--policy.path 指向 pretrained_model，表示由训练好的 ACT 接管动作；--robot.max_relative_target=8 用于首次推理的保守限幅。[1]</div>
+<h2 id="section-47">12. 推理评估、补采与迭代</h2>
+<p>第一次能运动只说明模型成功加载，不能直接说明任务已经稳定。建议至少测试 10 次，记录成功阶段与失败阶段。</p>
+<div class="table-scroll"><table><tr><th><p><strong>评估项</strong></p></th><th><p><strong>记录内容</strong></p></th></tr><tr><td><p><strong>起始条件</strong></p></td><td><p><strong>药盒位置、目标区域、机械臂初始姿态</strong></p></td></tr><tr><td><p><strong>接近阶段</strong></p></td><td><p><strong>能否找到并接近药盒</strong></p></td></tr><tr><td><p><strong>抓取阶段</strong></p></td><td><p><strong>夹爪是否对准、闭合时机是否正确</strong></p></td></tr><tr><td><p><strong>抬升阶段</strong></p></td><td><p><strong>是否稳定夹持、是否掉落</strong></p></td></tr><tr><td><p><strong>搬运阶段</strong></p></td><td><p><strong>路径是否安全、是否偏离</strong></p></td></tr><tr><td><p><strong>放置阶段</strong></p></td><td><p><strong>是否到达目标区并正确松开</strong></p></td></tr><tr><td><p><strong>结果</strong></p></td><td><p><strong>成功 / 失败及失败原因</strong></p></td></tr></table></div>
+<div class="table-scroll"><table><tr><th><p><strong>失败表现</strong></p></th><th><p><strong>优先处理</strong></p></th></tr><tr><td><p><strong>无法找到药盒</strong></p></td><td><p><strong>增加不同药盒位置和视觉覆盖的数据</strong></p></td></tr><tr><td><p><strong>接近但抓空</strong></p></td><td><p><strong>增加对准、慢速接近与闭合时机示范</strong></p></td></tr><tr><td><p><strong>夹住后掉落</strong></p></td><td><p><strong>增加稳定夹持、抬升与运输示范</strong></p></td></tr><tr><td><p><strong>偏离后无法恢复</strong></p></td><td><p><strong>补采从轻微偏差状态恢复的演示</strong></p></td></tr><tr><td><p><strong>相机稍动即失败</strong></p></td><td><p><strong>恢复相机位姿，或系统性采集有限视角变化</strong></p></td></tr></table></div>
+<div class="callout">完整研发闭环：采集 → 训练 → 单回合推理 → 失败分类 → 定向补采 → 重新训练 → 成功率评估。第一次训练通常不是终点，而是开始定位数据覆盖问题。</div>
+<h2 id="section-48">13. 常见问题与故障排查</h2>
+<div class="table-scroll"><table><tr><th><p><strong>现象</strong></p></th><th><p><strong>原因</strong></p></th><th><p><strong>处理方法</strong></p></th></tr><tr><td><p><strong>Rerun 有画面但方向键无提示</strong></p></td><td><p><strong>焦点在 Rerun 或按了界面按钮</strong></p></td><td><p><strong>关闭 Rerun 或切回终端，按实体左右方向键</strong></p></td></tr><tr><td><p><strong>Rerun 仍显示已作废轨迹</strong></p></td><td><p><strong>Rerun 显示会话总时间轴</strong></p></td><td><p><strong>以终端 Re-record episode 和最终数据集为准</strong></p></td></tr><tr><td><p><strong>episodes.jsonl 不存在</strong></p></td><td><p><strong>当前 LeRobot 使用新版 meta/episodes Parquet 格式</strong></p></td><td><p><strong>检查 meta/info.json 与 meta/episodes 目录</strong></p></td></tr><tr><td><p><strong>MP4 数量少于 episode 数</strong></p></td><td><p><strong>多个 episode 被分块编码</strong></p></td><td><p><strong>以 total_episodes 为准</strong></p></td></tr><tr><td><p><strong>Git clone TLS 失败</strong></p></td><td><p><strong>服务器访问 GitHub 不稳定</strong></p></td><td><p><strong>从本机上传同版本源码</strong></p></td></tr><tr><td><p><strong>pip 下载很慢</strong></p></td><td><p><strong>默认源连接慢</strong></p></td><td><p><strong>使用清华 PyPI 镜像</strong></p></td></tr><tr><td><p><strong>NVML Unknown Error</strong></p></td><td><p><strong>容器失去 GPU 访问</strong></p></td><td><p><strong>重启/重新挂载 GPU 容器并保留 /workspace</strong></p></td></tr><tr><td><p><strong>CUDA out of memory</strong></p></td><td><p><strong>batch size 过大</strong></p></td><td><p><strong>将 batch_size 32 降为 16、8 或 4</strong></p></td></tr><tr><td><p><strong>没有 checkpoint</strong></p></td><td><p><strong>尚未达到 save_freq</strong></p></td><td><p><strong>本项目到 5000 步才保存首个 checkpoint</strong></p></td></tr><tr><td><p><strong>step:43K 被解析为 43</strong></p></td><td><p><strong>监控脚本未处理 K/M 后缀</strong></p></td><td><p><strong>将 43K 转换为 43000</strong></p></td></tr><tr><td><p><strong>把 root@...# 粘贴进终端</strong></p></td><td><p><strong>复制了提示符或命令输出</strong></p></td><td><p><strong>只复制代码框内命令</strong></p></td></tr></table></div>
+<h2 id="section-49">附录 A. 每次实验的最短命令顺序</h2>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code># 机械臂电脑：进入环境
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate lerobot
+cd ~/lerobot
+
+# 检测设备
+v4l2-ctl --list-devices
+lerobot-find-cameras opencv
+ls -l /dev/serial/by-id/
+
+# 设置本次变量
+FRONT_CAMERA=/dev/video4
+WRIST_CAMERA=/dev/video10
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00</code></pre></div>
+<div class="code-block"><span class="code-label">SOURCE / COMMAND</span><button class="copy-code" type="button">复制</button><pre><code># 服务器：进入训练环境
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+cd /workspace/alicia_act/lerobot
+
+# 检查数据和 GPU
+grep -E &#x27;&quot;total_episodes&quot;|&quot;total_frames&quot;|&quot;fps&quot;&#x27; \
+  /workspace/alicia_act/data/medicine_box_keyboard_test_v0/meta/info.json
+nvidia-smi
+python -c &quot;import torch; print(torch.cuda.is_available())&quot;</code></pre></div>
+<h2 id="section-50">附录 B. 参考资料</h2>
+<p><a href="https://docs.sparklingrobo.com/docs/alicia-m-series/dualarm/doc_02_imitation" target="_blank" rel="noopener noreferrer">[1] 玄雅科技：Alicia-M 模仿学习系统介绍</a></p>
+<p><a href="https://huggingface.co/docs/lerobot/en/act" target="_blank" rel="noopener noreferrer">[2] LeRobot 文档：ACT（Action Chunking with Transformers）</a></p>
+<p><a href="https://arxiv.org/abs/2304.13705" target="_blank" rel="noopener noreferrer">[3] Zhao 等：Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware</a></p>
+<p><a href="https://arxiv.org/abs/2406.09246" target="_blank" rel="noopener noreferrer">[4] Kim 等：OpenVLA: An Open-Source Vision-Language-Action Model</a></p>
+<p><a href="https://arxiv.org/abs/2605.00080" target="_blank" rel="noopener noreferrer">[5] World Model for Robot Learning: A Comprehensive Survey</a></p>
+<h2 id="section-51">附录 C. 文档维护建议</h2>
+<p>每次硬件或软件版本变化后，更新“当前项目关键参数”和目录路径。</p>
+<p>将成功推理命令、成功率、失败案例和补采批次继续追加到本手册。</p>
+<p>正式交付给其他使用者前，在一台新环境上按手册从头复现一次，记录遗漏依赖。</p>
+<p>保留最终 pretrained_model、数据集校验信息、LeRobot 提交版本和训练日志。</p></div><div class="doc-bottom"><a href="../index.html">返回资源库</a><a href="../../lab/index.html#equipment">实验设备 →</a></div></article><aside class="doc-toc" aria-label="本页目录"><strong>本页目录</strong><a class="" href="#section-1">文档说明</a><a class="" href="#section-2">目录</a><a class="" href="#section-3">1. 项目目标与完整流程</a><a class="" href="#section-4">2. 基础概念：模仿学习、ACT、VLA与世界模型</a><a class="sub" href="#section-5">2.1 什么是模仿学习</a><a class="sub" href="#section-6">2.2 ACT 的定位</a><a class="sub" href="#section-7">2.3 ACT 不只是“依葫芦画瓢”</a><a class="sub" href="#section-8">2.4 ACT 与 VLA 的边界</a><a class="sub" href="#section-9">2.5 什么是世界模型</a><a class="sub" href="#section-10">2.6 学习 ACT 对 VLA 与世界模型的启发</a><a class="" href="#section-11">3. 实验设备、软件与项目路径</a><a class="sub" href="#section-12">3.1 硬件与任务</a><a class="sub" href="#section-13">3.2 当前项目关键参数</a><a class="sub" href="#section-14">3.3 目录约定</a><a class="" href="#section-15">4. 机械臂电脑安装 LeRobot 环境</a><a class="" href="#section-16">5. 每次实验前检测设备</a><a class="sub" href="#section-17">5.1 进入环境</a><a class="sub" href="#section-18">5.2 检测相机</a><a class="sub" href="#section-19">5.3 检测机械臂串口</a><a class="sub" href="#section-20">5.4 设置本次临时变量并检查占用</a><a class="" href="#section-21">6. 遥操作测试与正式数据采集</a><a class="sub" href="#section-22">6.1 先采集 1 个测试回合</a><a class="sub" href="#section-23">6.2 正式采集 30 个 episode</a><a class="sub" href="#section-24">6.3 采集控制键与正确时机</a><a class="sub" href="#section-25">6.4 数据质量标准</a><a class="" href="#section-26">7. 数据集检查与上传服务器</a><a class="sub" href="#section-27">7.1 检查数据集总体信息</a><a class="sub" href="#section-28">7.2 通过 VS Code / SSH 上传服务器</a><a class="" href="#section-29">8. 服务器训练环境与 GPU 检查</a><a class="sub" href="#section-30">8.1 创建独立 Conda 环境</a><a class="sub" href="#section-31">8.2 安装 LeRobot</a><a class="sub" href="#section-32">8.3 检查 GPU</a><a class="" href="#section-33">9. ACT 训练、监控与检查点管理</a><a class="sub" href="#section-34">9.1 训练命令</a><a class="sub" href="#section-35">9.2 训练过程如何理解</a><a class="sub" href="#section-36">9.3 查看日志和训练状态</a><a class="sub" href="#section-37">9.4 检查点与空间管理</a><a class="" href="#section-38">10. 训练结果完整性验证</a><a class="sub" href="#section-39">10.1 确认训练结束与日志</a><a class="sub" href="#section-40">10.2 检查最终模型文件</a><a class="sub" href="#section-41">10.3 读取配置与 safetensors 完整性</a><a class="" href="#section-42">11. 模型下载与真机推理</a><a class="sub" href="#section-43">11.1 将模型下载回机械臂电脑</a><a class="sub" href="#section-44">11.2 推理流程</a><a class="sub" href="#section-45">11.3 第一次推理前的安全要求</a><a class="sub" href="#section-46">11.4 单回合安全推理命令</a><a class="" href="#section-47">12. 推理评估、补采与迭代</a><a class="" href="#section-48">13. 常见问题与故障排查</a><a class="" href="#section-49">附录 A. 每次实验的最短命令顺序</a><a class="" href="#section-50">附录 B. 参考资料</a><a class="" href="#section-51">附录 C. 文档维护建议</a></aside></main><footer class="foot"><div class="wrap"><div class="foot-grid"><div><strong>智能物流系统北京市重点实验室</strong><p>北京物资学院 · 计算机与人工智能学院</p></div><div class="foot-links"><a href="../../lab/index.html">实验室主页</a><a href="https://www.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学校官网</a><a href="https://xxxy.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学院官网</a><a href="../sources.html">资料来源</a></div></div><div class="foot-bottom"><span>© 2026 智能物流系统北京市重点实验室</span><span>公开访问 · 文档与资料索引</span></div></div></footer></body></html>

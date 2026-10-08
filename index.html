@@ -1,0 +1,1918 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>实验室资源库 · 智能物流系统北京市重点实验室</title><meta name="description" content="依托北京物资学院，研究物流系统的感知、决策、控制与协同，开展机器人操作、智能驾驶、无人配送与智慧仓储实验。"><meta name="theme-color" content="#123c57"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="assets/seal.webp" type="image/webp"><link rel="stylesheet" href="assets/site.css"><script src="assets/site.js" defer></script></head><body class="resource-body"><a class="skip" href="#main">跳到正文</a><div class="resource-header"><div class="institution"><div class="wrap"><span>北京物资学院 · 计算机与人工智能学院</span><span class="institution-en">BEIJING WUZI UNIVERSITY</span></div></div><header class="topbar"><div class="wrap"><a class="brand" href="index.html"><img src="assets/seal.webp" alt="北京物资学院" class="" fetchpriority="high" decoding="async"><span><strong>实验室资源库</strong><small>智能物流系统北京市重点实验室</small></span></a><button class="menu-toggle" aria-label="展开导航" aria-expanded="false" aria-controls="site-nav">菜单</button><nav class="nav" id="site-nav" aria-label="主导航"><a href="index.html" class="active" aria-current="page">全部资源</a><a href="index.html?category=机械臂与模仿学习" class="">复现手册</a><a href="index.html?category=研究进展" class="">研究资料</a><a class="portal" href="../lab/index.html">实验室主页</a></nav></div></header></div><main id="main" class="wrap resource-layout"><aside class="resource-sidebar"><div class="sidebar-label">资源分类</div><div class="sidebar-filters"><button class="sidebar-filter active" data-filter="全部" aria-pressed="true">全部资源</button><button class="sidebar-filter " data-filter="机械臂与模仿学习" aria-pressed="false">机械臂与模仿学习</button><button class="sidebar-filter " data-filter="机器人平台" aria-pressed="false">机器人平台</button><button class="sidebar-filter " data-filter="智能驾驶与车路协同" aria-pressed="false">智能驾驶与车路协同</button><button class="sidebar-filter " data-filter="驾驶模拟与人因" aria-pressed="false">驾驶模拟与人因</button><button class="sidebar-filter " data-filter="研究进展" aria-pressed="false">研究进展</button></div><div class="sidebar-note"><a class="text-link" href="../lab/index.html#equipment">实验设备 →</a></div></aside><div><div class="resource-title"><h1>实验室资源库</h1><div class="search-wrap"><svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input class="search-input" data-search type="search" placeholder="全文搜索：设备、算法、安装步骤或命令" aria-label="全文搜索：设备、算法、安装步骤或命令" autocomplete="off"></div></div><div class="resource-results-head"><h2 data-category-title>全部资源</h2><span aria-live="polite"><span data-count>14</span> 条结果</span></div><div class="resource-results"><article class="resource-card" data-searchable="Alicia-D / M：ACT 模仿学习全流程 机械臂与模仿学习 设备检测、遥操作采集、GPU 训练、真机推理与常见问题。 Alicia ACT LeRobot 数据采集 Alicia-D → Alicia-M
+基于 LeRobot 与 ACT 的模仿学习全流程操作手册
+从概念理解、数据采集、服务器训练到真机推理
+设备检测
+遥操作采集
+数据校验
+GPU训练
+模型验证
+真机推理
+依据玄雅 Alicia-M 官方文档，并结合本项目实际操作参数整理
+文档说明
+本手册面向第一次接触机器人模仿学习的使用者。正文将“为什么做、模型学什么、命令怎么运行、结果如何判断”放在同一条流程中，并明确区分官方推荐参数与本项目实际参数。
+使用原则：设备编号、串口号和相机路径每次都先检测，再填入命令；不要把终端提示符或命令输出一起复制回终端。
+目录
+章节
+内容
+1
+项目目标与完整流程
+2
+基础概念：模仿学习、ACT、VLA与世界模型
+3
+实验设备、软件与项目路径
+4
+机械臂电脑安装 LeRobot 环境
+5
+每次实验前检测设备
+6
+遥操作测试与正式数据采集
+7
+数据集检查与上传服务器
+8
+服务器训练环境与 GPU 检查
+9
+ACT 训练、监控与检查点管理
+10
+训练结果完整性验证
+11
+模型下载与真机推理
+12
+推理评估、补采与迭代
+13
+常见问题与故障排查
+附录
+完整命令速查与参考资料
+1. 项目目标与完整流程
+本项目使用 Alicia-D 示教臂遥操作 Alicia-M 操作臂，采集两路相机图像、机械臂状态与专家动作；随后在 RTX 4090 服务器上训练 ACT 策略，最终让 Alicia-M 在不依赖人工遥操作的情况下自主完成药盒抓取与放置。
+阶段
+输入
+主要操作
+输出
+1. 设备检测
+机械臂、双相机
+确认视频设备与串口
+可用设备路径
+2. 遥操采集
+人类示范
+Alicia-D 控制 Alicia-M
+LeRobotDataset
+3. 数据检查
+采集目录
+检查 episode、帧数、相机键
+可训练数据集
+4. ACT 训练
+图像、状态、动作
+离线监督训练 50000 步
+模型检查点
+5. 真机推理
+训练模型与实时观测
+ACT 输出动作块
+自主抓放
+6. 评估迭代
+多次推理结果
+统计失败类型并补采
+更稳的策略
+2. 基础概念：模仿学习、ACT、VLA与世界模型
+2.1 什么是模仿学习
+模仿学习的核心是让机器人从专家示范中学习“在某种观察下应该执行什么动作”。本项目中的专家是遥操作 Alicia-D 的人，示范由两路相机、Alicia-M 当前状态以及实际下发动作共同组成。
+observation（图像 + 机器人状态）  →  expert action（关节 + 夹爪动作）
+2.2 ACT 的定位
+ACT（Action Chunking with Transformers）是一种视觉条件下的机器人模仿学习策略。它不是轨迹播放器，而是一个从当前观测到未来动作序列的策略网络。ACT 一次预测若干连续动作，即“动作块”，以降低长任务的有效决策长度并提高动作连续性。[2][3]
+πθ(I_t, q_t)  →  â_t, â_{t+1}, …, â_{t+K-1}
+ACT模型在时刻读取当前相机画面和机械臂状态，然后一次性预测未来连续步的机械臂动作。
+项目
+ACT 中的含义
+I_t
+当前 front 与 wrist 相机图像
+q_t
+Alicia-M 当前关节和夹爪状态
+â
+模型预测的关节与夹爪动作
+K
+一个动作块包含的未来动作步数
+2.3 ACT 不只是“依葫芦画瓢”
+ACT 确实以专家动作为监督目标，但它学习的是条件映射，而不是按时间回放某一条录像。只要药盒位置、相机视角和机械臂状态仍处于训练数据覆盖范围，模型可能生成训练集中没有完全出现过的新轨迹；但当场景、物体或起始姿态偏离训练分布较大时，成功率会明显下降。
+准确定位：ACT 是训练分布内的专用视觉动作策略，擅长固定机器人、固定任务和有限场景变化，不等于通用机器人智能。
+2.4 ACT 与 VLA 的边界
+VLA（Vision-Language-Action）强调视觉、语言和动作的联合建模。典型 VLA 会把自然语言指令作为真正的模型输入，并通过大规模多任务预训练获得语义与泛化能力；适配新机器人时常从预训练参数开始微调。OpenVLA 等工作即采用大规模机器人示范预训练，再面向新设置进行微调。[4]
+维度
+ACT
+VLA
+主要输入
+图像、机器人状态
+图像、语言指令、机器人状态
+主要输出
+连续动作块
+受语言条件约束的机器人动作
+常见训练方式
+单任务数据从头训练
+基础模型预训练后微调
+任务范围
+单任务或少量固定任务
+多任务、多物体、多指令
+语言作用
+通常只是元数据
+直接影响动作预测
+泛化目标
+训练分布内稳定执行
+跨任务、跨物体、跨场景泛化
+判断边界：是否使用 Transformer 不是关键；关键是语言是否真正进入模型、是否在多任务数据上学习，以及不同语言是否会产生不同动作。
+2.5 什么是世界模型
+世界模型关注“执行某个动作后，环境会怎样变化”。它通常学习动作条件下的未来状态、未来图像或潜在表示，可用于预测、规划、仿真和评估。[5]
+world model：当前状态 s_t + 动作 a_t  →  未来状态或未来图像 s_{t+1}
+模型
+核心问题
+典型映射
+ACT
+专家在这种情况下会怎么动？
+观察 → 动作块
+VLA
+根据视觉和语言应该完成什么并怎么动？
+视觉 + 语言 + 状态 → 动作
+世界模型
+这样动以后会发生什么？
+状态 + 动作 → 未来状态
+2.6 学习 ACT 对 VLA 与世界模型的启发
+理解机器人数据不是单独的视频，而是图像、状态、动作、时间戳与episode边界的同步组合。
+理解observation与action的时间对齐；模型再大，图像和动作错位仍然无法正确学习。
+理解动作表示：关节绝对位置、增量、末端位姿、速度和动作块会直接影响学习难度。
+理解训练与推理分布偏移：推理时模型会进入由自身动作产生的新状态，误差会逐步累积。
+理解真机闭环：相机读取、状态读取、模型推理、动作下发、控制频率与安全限幅。
+同一份序列数据既可训练ACT的观察→动作，也可用于世界模型的状态+动作→未来状态。
+本项目为什么先做 ACT：当前数据是固定机械臂、固定双相机、单一药盒任务和 30 条示范，最适合先跑通专用策略的完整闭环；完成后再扩展多任务语言数据，微调 VLA，或研究未来状态预测。
+3. 实验设备、软件与项目路径
+3.1 硬件与任务
+类别
+本项目配置
+示教臂（Leader）
+Alicia-D
+操作臂（Follower）
+Alicia-M
+外部相机（front）
+icspring USB 相机
+腕部相机（wrist）
+Intel RealSense D405
+机械臂电脑
+Ubuntu 24.04，连接机械臂与相机
+训练服务器
+NVIDIA GeForce RTX 4090，约 24 GB 显存
+任务
+抓取桌面药盒并放入目标区域
+3.2 当前项目关键参数
+参数
+当前值
+说明
+数据集名称
+medicine_box_keyboard_test_v0
+名称不影响训练，但后续路径需保持一致
+episode 数
+30
+专家示范回合数
+总帧数
+12028
+info.json 记录
+帧率
+30 FPS
+采集、训练和推理保持一致
+训练步数
+50000
+一次参数更新记为一步
+batch size
+32
+本项目 RTX 4090 实际使用值
+保存频率
+每 5000 步
+生成一个 checkpoint
+3.3 目录约定
+位置
+用途
+~/lerobot
+机械臂电脑上的 Synria LeRobot 源码
+~/lerobot/data/medicine_box_keyboard_test_v0
+本地采集数据集
+/workspace/alicia_act/lerobot
+服务器 LeRobot 源码
+/workspace/miniforge3/envs/alicia_act
+服务器 Conda 环境
+/workspace/alicia_act/data/medicine_box_keyboard_test_v0
+服务器训练数据
+/workspace/alicia_act/outputs/act_medicine_box_v0
+ACT 训练输出
+/workspace/alicia_act/logs/act_medicine_box_v0.log
+训练日志
+4. 机械臂电脑安装 LeRobot 环境
+玄雅官方文档使用 Python 3.11，并安装 Synria-Robotics/lerobot 的 v6.1.1-beta 分支。[1] 环境只需安装一次。
+创建并安装环境
+conda create -n lerobot python=3.11 -y
+conda activate lerobot
+
+cd ~
+git clone https://github.com/Synria-Robotics/lerobot.git -b v6.1.1-beta
+cd ~/lerobot
+python -m pip install -e .
+验证安装
+lerobot-record --help
+lerobot-train --help
+python -c &quot;import alicia_d_sdk, alicia_m_sdk; print(&#x27;Alicia SDKs OK&#x27;)&quot;
+判断标准：命令能正常显示帮助信息，并输出 Alicia SDKs OK，即可认为 LeRobot 与两套机械臂 SDK 安装成功。
+5. 每次实验前检测设备
+必须执行：相机 /dev/video* 与串口 /dev/ttyACM* 可能随 USB 插拔变化。正式命令中只使用本次实际检测到的设备。
+5.1 进入环境
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate lerobot
+cd ~/lerobot
+5.2 检测相机
+直接在终端检测设备和参数
+v4l2-ctl --list-devices
+lerobot-find-cameras opencv
+需要实际查看画面时，使用官方仓库提供的相机检测文件；在窗口中按 q 依次查看下一路相机。[1]
+python examples/camera/camera_detection.py
+本项目一次检测结果：front=/dev/video4，wrist=/dev/video10。该结果仅供本次连接参考，不应写成永久固定值。
+5.3 检测机械臂串口
+ls /dev/ttyACM*
+ls -l /dev/serial/by-id/
+官方建议先连接 Alicia-M，再连接 Alicia-D，通过新增端口判断对应关系；设备编号顺序不固定。[1] 本项目使用 /dev/serial/by-id/ 稳定路径，便于减少 ttyACM 编号变化带来的误接。
+本项目当前串口标识
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00
+5.4 设置本次临时变量并检查占用
+FRONT_CAMERA=/dev/video4
+WRIST_CAMERA=/dev/video10
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00
+
+echo &quot;外部相机：$FRONT_CAMERA&quot;
+echo &quot;腕部相机：$WRIST_CAMERA&quot;
+echo &quot;操作臂：$FOLLOWER_PORT&quot;
+echo &quot;示教臂：$LEADER_PORT&quot;
+
+sudo fuser -v &quot;$FRONT_CAMERA&quot; &quot;$WRIST_CAMERA&quot; &quot;$FOLLOWER_PORT&quot; &quot;$LEADER_PORT&quot;
+判断标准：fuser 没有输出表示设备未被其他程序占用。相机预览结束后必须按 q 退出并释放设备，再开始采集。
+6. 遥操作测试与正式数据采集
+6.1 先采集 1 个测试回合
+官方建议先录制 1 个 episode，确认动作方向、夹爪、相机和串口正常后再正式采集。[1]
+DATASET_NAME=medicine_box_test_v0
+DATASET_ROOT=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+TASK=&quot;pick up the medicine box and place it in the target area&quot;
+
+lerobot-record \
+  --robot.type=alicia_m_follower \
+  --robot.port=&quot;$FOLLOWER_PORT&quot; \
+  --robot.cameras=&quot;{front: {type: opencv, index_or_path: $FRONT_CAMERA, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: $WRIST_CAMERA, width: 640, height: 480, fps: 30}}&quot; \
+  --robot.id=alicia_m \
+  --teleop.type=alicia_d_leader \
+  --teleop.port=&quot;$LEADER_PORT&quot; \
+  --teleop.gripper_type=50mm \
+  --teleop.directly_controls_robot=false \
+  --teleop.target_follower_type=alicia_m \
+  --teleop.id=alicia_d \
+  --dataset.repo_id=&quot;labuser/$DATASET_NAME&quot; \
+  --dataset.root=&quot;$DATASET_ROOT&quot; \
+  --dataset.num_episodes=1 \
+  --dataset.single_task=&quot;$TASK&quot; \
+  --dataset.episode_time_s=30 \
+  --dataset.reset_time_s=15 \
+  --display_data=true \
+  --dataset.push_to_hub=false
+6.2 正式采集 30 个 episode
+DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+TASK=&quot;pick up the medicine box and place it in the target area&quot;
+
+lerobot-record \
+  --robot.type=alicia_m_follower \
+  --robot.port=&quot;$FOLLOWER_PORT&quot; \
+  --robot.cameras=&quot;{front: {type: opencv, index_or_path: $FRONT_CAMERA, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: $WRIST_CAMERA, width: 640, height: 480, fps: 30}}&quot; \
+  --robot.id=alicia_m \
+  --teleop.type=alicia_d_leader \
+  --teleop.port=&quot;$LEADER_PORT&quot; \
+  --teleop.gripper_type=50mm \
+  --teleop.directly_controls_robot=false \
+  --teleop.target_follower_type=alicia_m \
+  --teleop.id=alicia_d \
+  --dataset.repo_id=&quot;labuser/$DATASET_NAME&quot; \
+  --dataset.root=&quot;$DATASET_ROOT&quot; \
+  --dataset.num_episodes=30 \
+  --dataset.single_task=&quot;$TASK&quot; \
+  --dataset.episode_time_s=60 \
+  --dataset.reset_time_s=15 \
+  --display_data=false \
+  --dataset.push_to_hub=false
+官方与项目差异：官方示例为每条 30 秒且 display_data=true；本项目因动作耗时与键盘焦点问题，将单条上限设为 60 秒，并在正式采集时关闭 Rerun。关闭可视化不会改变数据内容。
+6.3 采集控制键与正确时机
+按键
+作用
+使用时机
+← 左方向键
+取消当前 episode 并重新录制
+任务失败、抓空、掉落或动作明显错误
+→ 右方向键
+提前结束并保存当前 episode
+任务提前成功完成
+Esc
+停止整个采集任务
+准备结束当前采集会话
+Ctrl+C
+强制终止程序
+异常运动或安全风险
+注意：按的是实体键盘左右方向键，不是 Rerun 界面的播放按钮。只有出现 Recording episode N 时才使用左右键；Reset the environment 和视频编码阶段不要重复按键。
+6.4 数据质量标准
+每条 episode 从相近的安全起始姿态开始，并完整完成抓取、抬起、移动和放置。
+保留成功、流畅且目标明确的示范；失败、长时间停顿、无关动作和碰撞应重录。
+人可以直接看真实药盒操作，但模型所需信息必须同时出现在两路相机画面中。
+相机和机械臂底座在正式采集、训练数据生成和推理期间尽量保持不变。
+7. 数据集检查与上传服务器
+7.1 检查数据集总体信息
+DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+
+du -sh &quot;$DATASET_ROOT&quot;
+grep -E &#x27;&quot;total_episodes&quot;|&quot;total_frames&quot;|&quot;fps&quot;&#x27; \
+  &quot;$DATASET_ROOT/meta/info.json&quot;
+grep -nE &#x27;observation.images.(front|wrist)&#x27; \
+  &quot;$DATASET_ROOT/meta/info.json&quot;
+find &quot;$DATASET_ROOT&quot; -type f -name &quot;*.parquet&quot; | sort
+find &quot;$DATASET_ROOT&quot; -type f -name &quot;*.mp4&quot; | sort
+本项目检查结果：total_episodes=30，total_frames=12028，fps=30；info.json 同时包含 observation.images.front 与 observation.images.wrist。
+新版 LeRobotDataset 会将多个 episode 分块存入少量 Parquet 和 MP4 文件，因此文件数量不需要等于 episode 数量。
+7.2 通过 VS Code / SSH 上传服务器
+上传命令必须在本机终端执行，提示符应为 labuser@labuser-ThinkBook...，而不是服务器容器中的 root@...。本项目 SSH 别名为 lab-gpu。
+DATASET_NAME=medicine_box_keyboard_test_v0
+LOCAL_DATASET=&quot;$HOME/lerobot/data/$DATASET_NAME&quot;
+
+ssh lab-gpu &quot;mkdir -p /workspace/alicia_act/data&quot;
+scp -r &quot;$LOCAL_DATASET&quot; lab-gpu:/workspace/alicia_act/data/
+服务器端检查
+DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;/workspace/alicia_act/data/$DATASET_NAME&quot;
+
+du -sh &quot;$DATASET_ROOT&quot;
+grep -E &#x27;&quot;total_episodes&quot;|&quot;total_frames&quot;|&quot;fps&quot;&#x27; \
+  &quot;$DATASET_ROOT/meta/info.json&quot;
+8. 服务器训练环境与 GPU 检查
+8.1 创建独立 Conda 环境
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda create -n alicia_act python=3.11 -y
+conda activate alicia_act
+python --version
+8.2 安装 LeRobot
+服务器访问 GitHub 不稳定时，可将本机同一份 LeRobot 源码上传，再在服务器环境中执行可编辑安装。这样既节省重复下载，也避免本机与服务器分支不一致。
+# 本机执行：只上传源码，不重复上传 data、outputs 和 .git
+cd &quot;$HOME&quot;
+tar \
+  --exclude=&#x27;lerobot/data&#x27; \
+  --exclude=&#x27;lerobot/outputs&#x27; \
+  --exclude=&#x27;lerobot/.git&#x27; \
+  --exclude=&#x27;*/__pycache__&#x27; \
+  -czf - lerobot | \
+ssh lab-gpu &#x27;mkdir -p /workspace/alicia_act &amp;&amp; tar -xzf - -C /workspace/alicia_act&#x27; 
+# 服务器执行
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+cd /workspace/alicia_act/lerobot
+
+python -m pip install -e . \
+  -i https://pypi.tuna.tsinghua.edu.cn/simple \
+  --timeout 120 \
+  --retries 10
+验证 LeRobot
+which lerobot-train
+python -c &quot;import lerobot; print(&#x27;LeRobot OK&#x27;)&quot;
+8.3 检查 GPU
+nvidia-smi
+python -c &quot;import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else &#x27;无GPU&#x27;)&quot;
+必须满足：nvidia-smi 能识别 RTX 4090，torch.cuda.is_available() 输出 True，才开始训练。
+NVML Unknown Error：该错误表示当前容器暂时无法访问 GPU，通常需要重启或重新挂载 GPU 容器；重新安装 PyTorch不能解决宿主机 GPU 权限问题。
+9. ACT 训练、监控与检查点管理
+9.1 训练命令
+玄雅官方推荐首次 ACT 训练使用 50000 步、每 5000 步保存一次，并关闭仿真评估。[1] 官方示例 batch size 为 16；本项目 RTX 4090 实际使用 32。
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+cd /workspace/alicia_act/lerobot
+
+DATASET_NAME=medicine_box_keyboard_test_v0
+DATASET_ROOT=&quot;/workspace/alicia_act/data/$DATASET_NAME&quot;
+OUTPUT_DIR=&quot;/workspace/alicia_act/outputs/act_medicine_box_v0&quot;
+LOG_DIR=&quot;/workspace/alicia_act/logs&quot;
+LOG_FILE=&quot;$LOG_DIR/act_medicine_box_v0.log&quot;
+
+mkdir -p &quot;$LOG_DIR&quot;
+
+nohup env \
+  CUDA_VISIBLE_DEVICES=0 \
+  PYTHONUNBUFFERED=1 \
+  lerobot-train \
+    --dataset.repo_id=&quot;labuser/$DATASET_NAME&quot; \
+    --dataset.root=&quot;$DATASET_ROOT&quot; \
+    --dataset.video_backend=pyav \
+    --policy.type=act \
+    --policy.device=cuda \
+    --policy.push_to_hub=false \
+    --output_dir=&quot;$OUTPUT_DIR&quot; \
+    --job_name=act_medicine_box_v0 \
+    --steps=50000 \
+    --batch_size=32 \
+    --save_freq=5000 \
+    --log_freq=100 \
+    --eval_freq=0 \
+    --wandb.enable=false \
+  &gt; &quot;$LOG_FILE&quot; 2&gt;&amp;1 &amp;
+
+TRAIN_PID=$!
+echo &quot;$TRAIN_PID&quot; &gt; /workspace/alicia_act/act_medicine_box_v0.pid
+9.2 训练过程如何理解
+从 30 条演示中随机抽取一批时间点和对应动作块。
+读取 front、wrist 图像和当前机器人状态。
+ACT 预测未来连续关节与夹爪动作。
+将预测动作与专家真实动作比较，计算 loss。
+反向传播并更新一次模型参数；这就是 1 个 training step。
+50000 步的含义：不是 50000 次真机任务，也不是 50000 条数据，而是对模型参数进行 50000 次批量更新。
+9.3 查看日志和训练状态
+TRAIN_PID=$(cat /workspace/alicia_act/act_medicine_box_v0.pid)
+ps -fp &quot;$TRAIN_PID&quot;
+tail -f /workspace/alicia_act/logs/act_medicine_box_v0.log
+nvidia-smi
+在 tail -f 中按 Ctrl+C 只会停止查看日志；由于训练通过 nohup 在后台运行，关闭 VS Code 或断开 SSH 不会停止训练。
+日志字段
+含义
+step
+模型参数更新步数；2K 表示 2000 步
+smpl
+累计使用的训练样本量
+epch
+相当于遍历数据集的轮数
+loss
+动作预测误差；整体下降通常是积极信号
+grdn
+梯度范数，用于观察梯度是否异常
+lr
+学习率
+updt_s
+每次模型更新耗时
+data_s
+每次数据读取耗时
+9.4 检查点与空间管理
+find /workspace/alicia_act/outputs/act_medicine_box_v0/checkpoints \
+  -mindepth 1 -maxdepth 1 -printf &#x27;%f -&gt; %l
+&#x27; | sort
+训练会生成 005000、010000、…、050000 及 last。推理只需最终 pretrained_model；若旧任务只保留推理能力，可删除中间 checkpoint 和最终 checkpoint 中的 training_state，但删除 training_state 后不能从该点续训。
+10. 训练结果完整性验证
+目标：不连接真机也能确认训练是否跑到 50K、是否存在最终检查点、配置和权重文件是否可读。
+10.1 确认训练结束与日志
+TRAIN_PID=$(cat /workspace/alicia_act/act_medicine_box_v0.pid)
+ps -fp &quot;$TRAIN_PID&quot; || echo &quot;训练进程已结束&quot;
+
+LOG_FILE=/workspace/alicia_act/logs/act_medicine_box_v0.log
+tail -n 30 &quot;$LOG_FILE&quot;
+grep -E &#x27;step:[0-9.]+[KkMm]?&#x27; &quot;$LOG_FILE&quot; | tail -n 5
+grep -iE &#x27;traceback|cuda out of memory|runtimeerror|exception|error|nan&#x27; &quot;$LOG_FILE&quot; | tail -n 30
+合格标准：最后训练进度达到 step:50K；没有 Traceback、CUDA OOM、RuntimeError 或 NaN。普通 UserWarning 不等于训练失败。
+10.2 检查最终模型文件
+OUTPUT_DIR=/workspace/alicia_act/outputs/act_medicine_box_v0
+CHECKPOINT_DIR=&quot;$OUTPUT_DIR/checkpoints&quot;
+POLICY_PATH=&quot;$CHECKPOINT_DIR/last/pretrained_model&quot;
+
+readlink -f &quot;$CHECKPOINT_DIR/last&quot;
+ls -lh &quot;$POLICY_PATH&quot;
+ls -lh &quot;$POLICY_PATH/config.json&quot; &quot;$POLICY_PATH/model.safetensors&quot;
+模型目录至少应包含：config.json、model.safetensors；玄雅官方文档还要求确认 train_config.json。[1]
+10.3 读取配置与 safetensors 完整性
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+
+python - &lt;&lt;&#x27;PY&#x27;
+import json
+from pathlib import Path
+from safetensors import safe_open
+
+p = Path(&#x27;/workspace/alicia_act/outputs/act_medicine_box_v0/checkpoints/last/pretrained_model&#x27;)
+config_file = p / &#x27;config.json&#x27;
+model_file = p / &#x27;model.safetensors&#x27;
+
+assert config_file.is_file(), f&#x27;缺少：{config_file}&#x27;
+assert model_file.is_file(), f&#x27;缺少：{model_file}&#x27;
+
+with config_file.open(&#x27;r&#x27;, encoding=&#x27;utf-8&#x27;) as f:
+    config = json.load(f)
+print(&#x27;配置读取正常；策略类型：&#x27;, config.get(&#x27;type&#x27;, config.get(&#x27;policy_type&#x27;, &#x27;未找到&#x27;)))
+
+with safe_open(model_file, framework=&#x27;pt&#x27;, device=&#x27;cpu&#x27;) as f:
+    keys = list(f.keys())
+print(&#x27;权重读取正常；张量数量：&#x27;, len(keys))
+print(&#x27;最终模型完整性检查通过&#x27;)
+PY
+11. 模型下载与真机推理
+11.1 将模型下载回机械臂电脑
+# 在本机终端执行
+mkdir -p &quot;$HOME/lerobot/models/act_medicine_box_v0&quot;
+scp -r \
+  lab-gpu:/workspace/alicia_act/outputs/act_medicine_box_v0/checkpoints/last/pretrained_model \
+  &quot;$HOME/lerobot/models/act_medicine_box_v0/&quot;
+
+POLICY_PATH=&quot;$HOME/lerobot/models/act_medicine_box_v0/pretrained_model&quot;
+ls -lh &quot;$POLICY_PATH&quot;
+11.2 推理流程
+推理阶段不再由人拖动 Alicia-D。系统读取实时 front / wrist 图像和 Alicia-M 当前状态，ACT 输出动作块，Alicia-M 执行后再读取新观测，形成闭环。
+实时图像 + 当前关节状态  →  ACT  →  未来动作块  →  Alicia-M 执行  →  新观测
+11.3 第一次推理前的安全要求
+清空机械臂周围杂物，准备随时断电或急停。
+重新检测相机和串口，不能沿用过期的 /dev/video* 与 /dev/ttyACM*。
+保持640×480、30 FPS、采集时的相机位置、机械臂起始姿态、药盒区域与采集阶段一致。
+11.4 单回合安全推理命令
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate lerobot
+cd ~/lerobot
+
+FRONT_CAMERA=/dev/video4
+WRIST_CAMERA=/dev/video10
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00
+POLICY_PATH=&quot;$HOME/lerobot/models/act_medicine_box_v0/pretrained_model&quot;
+
+EVAL_NAME=&quot;eval_act_medicine_box_v0_$(date +%Y%m%d_%H%M%S)&quot;
+EVAL_ROOT=&quot;$HOME/lerobot/data/$EVAL_NAME&quot;
+TASK=&quot;pick up the medicine box and place it in the target area&quot;
+
+lerobot-record \
+  --policy.path=&quot;$POLICY_PATH&quot; \
+  --policy.device=cuda \
+  --robot.type=alicia_m_follower \
+  --robot.port=&quot;$FOLLOWER_PORT&quot; \
+  --robot.cameras=&quot;{front: {type: opencv, index_or_path: $FRONT_CAMERA, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: $WRIST_CAMERA, width: 640, height: 480, fps: 30}}&quot; \
+  --robot.id=alicia_m \
+  --robot.max_relative_target=8 \
+  --teleop.type=alicia_d_leader \
+  --teleop.port=&quot;$LEADER_PORT&quot; \
+  --teleop.gripper_type=50mm \
+  --teleop.directly_controls_robot=false \
+  --teleop.target_follower_type=alicia_m \
+  --teleop.id=alicia_d \
+  --dataset.repo_id=&quot;labuser/$EVAL_NAME&quot; \
+  --dataset.root=&quot;$EVAL_ROOT&quot; \
+  --dataset.num_episodes=1 \
+  --dataset.single_task=&quot;$TASK&quot; \
+  --dataset.episode_time_s=30 \
+  --dataset.reset_time_s=15 \
+  --display_data=true \
+  --dataset.push_to_hub=false
+最关键参数：--policy.path 指向 pretrained_model，表示由训练好的 ACT 接管动作；--robot.max_relative_target=8 用于首次推理的保守限幅。[1]
+12. 推理评估、补采与迭代
+第一次能运动只说明模型成功加载，不能直接说明任务已经稳定。建议至少测试 10 次，记录成功阶段与失败阶段。
+评估项
+记录内容
+起始条件
+药盒位置、目标区域、机械臂初始姿态
+接近阶段
+能否找到并接近药盒
+抓取阶段
+夹爪是否对准、闭合时机是否正确
+抬升阶段
+是否稳定夹持、是否掉落
+搬运阶段
+路径是否安全、是否偏离
+放置阶段
+是否到达目标区并正确松开
+结果
+成功 / 失败及失败原因
+失败表现
+优先处理
+无法找到药盒
+增加不同药盒位置和视觉覆盖的数据
+接近但抓空
+增加对准、慢速接近与闭合时机示范
+夹住后掉落
+增加稳定夹持、抬升与运输示范
+偏离后无法恢复
+补采从轻微偏差状态恢复的演示
+相机稍动即失败
+恢复相机位姿，或系统性采集有限视角变化
+完整研发闭环：采集 → 训练 → 单回合推理 → 失败分类 → 定向补采 → 重新训练 → 成功率评估。第一次训练通常不是终点，而是开始定位数据覆盖问题。
+13. 常见问题与故障排查
+现象
+原因
+处理方法
+Rerun 有画面但方向键无提示
+焦点在 Rerun 或按了界面按钮
+关闭 Rerun 或切回终端，按实体左右方向键
+Rerun 仍显示已作废轨迹
+Rerun 显示会话总时间轴
+以终端 Re-record episode 和最终数据集为准
+episodes.jsonl 不存在
+当前 LeRobot 使用新版 meta/episodes Parquet 格式
+检查 meta/info.json 与 meta/episodes 目录
+MP4 数量少于 episode 数
+多个 episode 被分块编码
+以 total_episodes 为准
+Git clone TLS 失败
+服务器访问 GitHub 不稳定
+从本机上传同版本源码
+pip 下载很慢
+默认源连接慢
+使用清华 PyPI 镜像
+NVML Unknown Error
+容器失去 GPU 访问
+重启/重新挂载 GPU 容器并保留 /workspace
+CUDA out of memory
+batch size 过大
+将 batch_size 32 降为 16、8 或 4
+没有 checkpoint
+尚未达到 save_freq
+本项目到 5000 步才保存首个 checkpoint
+step:43K 被解析为 43
+监控脚本未处理 K/M 后缀
+将 43K 转换为 43000
+把 root@...# 粘贴进终端
+复制了提示符或命令输出
+只复制代码框内命令
+附录 A. 每次实验的最短命令顺序
+# 机械臂电脑：进入环境
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate lerobot
+cd ~/lerobot
+
+# 检测设备
+v4l2-ctl --list-devices
+lerobot-find-cameras opencv
+ls -l /dev/serial/by-id/
+
+# 设置本次变量
+FRONT_CAMERA=/dev/video4
+WRIST_CAMERA=/dev/video10
+FOLLOWER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F042937-if00
+LEADER_PORT=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5B8F043506-if00
+# 服务器：进入训练环境
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate alicia_act
+cd /workspace/alicia_act/lerobot
+
+# 检查数据和 GPU
+grep -E &#x27;&quot;total_episodes&quot;|&quot;total_frames&quot;|&quot;fps&quot;&#x27; \
+  /workspace/alicia_act/data/medicine_box_keyboard_test_v0/meta/info.json
+nvidia-smi
+python -c &quot;import torch; print(torch.cuda.is_available())&quot;
+附录 B. 参考资料
+[1] 玄雅科技：Alicia-M 模仿学习系统介绍
+[2] LeRobot 文档：ACT（Action Chunking with Transformers）
+[3] Zhao 等：Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware
+[4] Kim 等：OpenVLA: An Open-Source Vision-Language-Action Model
+[5] World Model for Robot Learning: A Comprehensive Survey
+附录 C. 文档维护建议
+每次硬件或软件版本变化后，更新“当前项目关键参数”和目录路径。
+将成功推理命令、成功率、失败案例和补采批次继续追加到本手册。
+正式交付给其他使用者前，在一台新环境上按手册从头复现一次，记录遗漏依赖。
+保留最终 pretrained_model、数据集校验信息、LeRobot 提交版本和训练日志。" data-category="机械臂与模仿学习"><div><h3><a href="guides/act.html">Alicia-D / M：ACT 模仿学习全流程 <span aria-hidden="true">→</span></a></h3><p>设备检测、遥操作采集、GPU 训练、真机推理与常见问题。</p></div><div class="resource-card-side"><span class="type-badge">复现手册</span><span>机械臂与模仿学习</span></div></article><article class="resource-card" data-searchable="Alicia-M：SmolVLA 复现与部署 机械臂与模仿学习 双相机采集、7 维数据清洗、20K 训练、模型下载与闭环推理。 SmolVLA VLA Alicia 7维动作 Alicia-M_SmolVLA
+复现全流程操作手册
+从数据采集、转换清洗、服务器训练到本机推理与迭代
+关键词
+内容
+任务对象
+2.5 cm 彩色小方块抓取并放置到圆盘
+机器人
+玄雅 Alicia-M，6 关节 + 1 夹爪，单臂 7 维状态/动作
+视觉输入
+外部固定相机 cam_right + 腕部相机 cam_wrist，两路 640×480 / 30 FPS RGB
+模型
+SmolVLA，基于 SmolVLM2-500M-Video-Instruct 的 VLA 策略微调
+训练服务器
+Ubuntu 容器，RTX 4090，LeRobot 0.6.0 / smolvla 环境
+推理电脑
+ThinkBook 16 G7 IAH，Ubuntu 24.04，RTX 5060，smolvla_infer 环境
+新手主线：先按规范采集 2.5 cm 方块的完整抓取示范，再完成 20-step 冒烟训练和 20K 正式训练，最后固定使用 checkpoint/020000 做真机推理。每次实验前先检测相机编号；数据转换后必须检查 state/action 维度；训练使用 nohup 保持后台运行；推理时不要一次修改多个变量。
+文档说明与目录
+本手册将 SmolVLA 复现过程拆成“概念—本地采集—数据转换—服务器训练—模型下载—真机推理—评估迭代”七条主线。每一阶段都给出输入、命令、输出和合格标准，便于初学者按 2.5 cm 方块、20K 训练和 checkpoint/020000 的单一路线完成首次复现。
+章节
+内容
+1
+项目目标与完整流程
+2
+基础概念：SmolVLA、VLA、动作块与闭环推理
+3
+设备、环境与路径约定
+4
+本地相机检测、采集前准备与 SmolVLA 代码实战
+5
+官方平台采集与数据集转换
+6
+14 维到 7 维数据清洗与质量检查
+7
+上传服务器与训练环境确认
+8
+SmolVLA 训练、日志和 checkpoint 管理
+9
+模型下载与本机推理
+10
+动作顺滑、速度和夹爪参数调节
+11
+失败分析、补采策略与数据迭代
+12
+常见问题与故障排查
+附录
+完整命令速查
+1. 项目目标与完整流程
+本项目目标是在 Alicia-M 机械臂上复现 SmolVLA：使用双相机图像、机械臂当前状态和语言任务文本作为输入，让模型输出 7 维关节与夹爪动作，从而完成 2.5 cm 彩色小方块抓取并放置到圆盘的任务。
+阶段
+输入
+主要操作
+输出/合格标准
+1. 设备检测
+外部相机、腕部相机、机械臂
+检测 /dev/video*、相机画面、GPU 与环境
+确认 CAM_RIGHT / CAM_WRIST；
+Camera OK
+2. 数据采集
+人类示范、官方采集平台
+采集 150 组或更多 episodes；
+每条完整抓取
+LeRobot 转换产物或
+平台转换产物
+3. 数据清洗
+CONVERT-v1 数据集
+检查 state/action 维度；
+14→7 裁剪有效侧
+SMOLVLA 7 维数据集
+4. 上传服务器
+本地 SMOLVLA 数据集
+rsync 上传到 /workspace/smolvla/data
+服务器可读取
+ parquet 与 videos
+5. 模型训练
+数据集 + smolvla_base_alicia_2cam
+完成 20K 离线监督训练
+checkpoint/020000/pretrained_model
+6. 下载推理
+pretrained_model
+rsync 下载到
+本机 models 目录
+本机 config 检查通过
+7. 实机评估
+实时双相机与机器人状态
+smolvla_fast_live.py 闭环推理
+记录成功率和失败阶段
+关键判断：SmolVLA 能动不等于任务成功。要分别判断“定位、接近、闭夹爪、抬升、搬运、放置”哪个阶段失败，再决定调参数还是补采数据。
+2. 基础概念：SmolVLA、VLA、动作块与闭环推理
+2.1 SmolVLA 在本项目中的定位
+SmolVLA 是一种视觉-语言-动作策略。它读取当前两路 RGB 图像、机器人 7 维状态和“抓取 2.5 cm 方块”的任务文本，然后预测未来一段 7 维动作序列。它不是传统轨迹播放器，也不是单步 PID 控制器，而是从示范数据中学习“当前观测下专家接下来会怎么动”。
+符号/字段
+本项目含义
+observation.images.camera1
+外部固定相机，由 cam_right rename 得到
+observation.images.camera2
+腕部相机，由 cam_wrist rename 得到
+observation.state
+Alicia-M 当前 6 关节 + 1 夹爪，共 7 维
+task
+语言任务文本，语义为抓取 2.5 cm 方块
+action
+模型预测的 6 关节目标 + 夹爪目标，共 7 维
+2.2 动作块与 REPLAN_EVERY
+本项目 20K checkpoint 通常包含 chunk_size=50、n_action_steps=50。推理脚本中 REPLAN_EVERY=0 并不是不重规划，而是表示每次执行完整 50 个动作后再重新观察和推理。REPLAN_EVERY=8 则会只执行动作块前 8 步，丢弃后 42 步，容易造成频繁推理停顿或永远执行不到抓取动作块后半段。
+参数
+实际行为
+适用场景
+REPLAN_EVERY=0
+执行 20K checkpoint 的完整 n_action_steps，本项目为 50 步
+动作更连续，作为本手册默认推理设置
+REPLAN_EVERY=8
+每 8 步重新推理，后续动作被丢弃
+需要高频纠偏时试验，但可能卡顿
+REPLAN_EVERY=16/24
+折中方案
+若 50 步太开环、8 步太短，可后续试
+2.3 训练与推理的区别
+阶段
+输入
+模型输出
+是否更新参数
+风险
+训练
+数据集中的图像、
+状态、任务、专家动作
+预测动作，与专家动作算 loss
+是
+数据错位、维度错误、质量低会直接学坏
+推理
+实时相机、实时状态、任务文本
+直接下发给 Alicia-M 
+的动作目标
+否
+场景偏移、动作不顺、夹爪时机错误
+3. 设备、环境与路径约定
+3.1 硬件与软件
+类别
+本项目配置
+机械臂
+Alicia-M 单臂，6 关节 + 1 夹爪
+外部相机
+USB 相机，训练数据键为 cam_right，推理映射为 camera1
+腕部相机
+机械臂腕部相机，训练数据键为 cam_wrist，推理映射为 camera2
+本机系统
+Ubuntu 24.04，conda 环境 smolvla_infer / lerobot
+服务器系统
+Ubuntu 24.04 容器，conda 环境 smolvla，RTX 4090
+模型基座
+/workspace/smolvla/models/smolvla_base_alicia_2cam
+3.2 当前项目路径
+命名说明：正文统一使用“2.5 cm 方块”。后续命令、任务字符串和已有目录仍保留项目早期技术标识，以确保脚本和路径能够直接运行，请勿自行改名。
+位置
+用途
+~/smolvla/inference/smolvla_fast_live.py
+本机 SmolVLA 实机推理脚本
+~/smolvla/tools/check_cameras.py
+本机逐个查看相机画面的检测脚本
+~/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1
+官方平台转换后的原始 LeRobot 数据集
+~/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA
+清洗为 7 维后的 SmolVLA 训练数据集
+/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA
+服务器训练数据路径
+/workspace/smolvla/outputs/pick_2_5b_smolvla_20k
+20K 训练输出目录
+~/smolvla/models/pick_2.5b_20k
+本机 20K 推理模型目录
+4. 本地相机检测与采集前准备
+4.1 进入推理环境
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer
+4.2 查看系统相机节点
+ls -l /dev/video*
+v4l2-ctl --list-devices
+ls -l /dev/v4l/by-id/ 2&gt;/dev/null
+4.3 逐个查看相机画面
+python ~/smolvla/tools/check_cameras.py
+按键说明：在自定义 check_cameras.py 中，任意键或空格查看下一个相机，q 退出全部检测。不要把这个行为和官方 camera_detection.py 混淆。
+变量
+含义
+示例
+CAM_RIGHT
+外部固定相机，送入 observation.images.camera1
+/dev/video4
+CAM_WRIST
+腕部相机，送入 observation.images.camera2
+/dev/video10
+4.4 腕部相机在官方平台不显示时的判断
+如果 smolvla_fast_live.py 能用 /dev/video10 打开腕部相机并显示 Camera OK，说明 Linux UVC/V4L2 层已经识别相机。官方采集平台只显示外部相机时，优先排查平台枚举的 /dev/video 节点、相机格式和是否选到了 metadata 节点，而不是盲目安装驱动。
+v4l2-ctl -d /dev/video10 --all
+v4l2-ctl -d /dev/video10 --list-formats-ext
+for d in /dev/video*; do
+  echo &quot;========== $d ==========&quot;
+  v4l2-ctl -d &quot;$d&quot; --all 2&gt;/dev/null | grep -E &quot;Card type|Driver name|Video input&quot;
+done
+4.5 实战：SmolVLA 代码实战
+本节把前面的设备检测与后续的数据转换、训练和推理串成一条可执行代码链。目标不是堆叠命令，而是让每一步都有明确输入、输出和合格标准；详细长命令仍以第 6—9 章为准。
+本节目标：完成环境可用性确认、2.5 cm 方块的 7 维数据集准备、推理脚本主流程理解、20K 训练与推理执行，以及 checkpoint/020000 结果的可复现实验记录。
+4.5.1 环境配置
+先固定 Python 环境、GPU、相机节点和项目路径。只有这些输入稳定，后续训练日志和真机结果才有可比性。
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer
+python -c &quot;import torch; print(torch.__version__, torch.cuda.is_available())&quot;
+v4l2-ctl --list-devices
+python ~/smolvla/tools/check_cameras.py
+检查项
+合格标准
+Python 环境
+能够导入 torch 与 lerobot；本机推理使用 smolvla_infer
+GPU
+服务器 torch.cuda.is_available() 为 True；nvidia-smi 可识别 GPU
+双相机
+外部相机与腕部相机均可打开，编号写入 CAM_RIGHT/CAM_WRIST
+路径
+MODEL_DIR、DATA_DIR 和输出目录均存在且可读写
+4.5.2 数据集准备
+训练前应把原始转换产物整理为 SmolVLA 可直接读取的 7 维数据集，并同时核对图像键、任务文本、帧数和 episode 边界。
+RAW=~/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1
+DATA=~/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA
+python -m json.tool &quot;$DATA/meta/info.json&quot; | less
+find &quot;$DATA/videos&quot; -type f -name &#x27;*.mp4&#x27; | sort | head
+对象
+必须确认
+不合格时处理
+meta/info.json
+episodes、frames、fps 与实际文件一致
+重新转换并复核统计量
+state/action
+每帧均为 [7]，无 None/NaN
+判断有效 7 维在左侧还是右侧后裁剪
+图像键
+cam_right、cam_wrist 可映射为 camera1、camera2
+修正 rename_map，不改错原始数据
+任务文本
+tasks.parquet 与推理 TASK 完全一致
+统一任务字符串后再训练
+4.5.3 核心代码讲解
+smolvla_fast_live.py 的核心职责是把双相机图像、机器人 7 维状态和 TASK 组织成 observation，调用策略生成动作块，再经过限幅后下发给 Alicia-M。
+阅读提示：下面是逻辑示意，用于理解数据流；具体类名、函数名和参数以当前仓库脚本为准。
+policy = load_policy(MODEL_DIR)
+while step &lt; MAX_STEPS:
+    observation = build_observation(camera1, camera2, state7, TASK)
+    action_chunk = policy.select_action(observation)
+    for target7 in select_steps(action_chunk, REPLAN_EVERY):
+        safe_target7 = limit_joint_and_gripper_step(target7)
+        robot.send_target(safe_target7)
+        record(state7, target7, safe_target7)
+代码对象
+作用
+关键检查
+observation
+组合 camera1、camera2、state7 和 TASK
+字段名、形状和设备必须与 config.json 一致
+action_chunk
+一次预测未来 n_action_steps 个 7 维目标
+确认 chunk_size / n_action_steps 与 checkpoint 一致
+REPLAN_EVERY
+决定动作块执行多少步后重新观察
+0 表示完整执行动作块；过小可能造成停顿
+安全限幅
+限制关节和夹爪单步变化
+记录模型 target 与实际下发 target 的差异
+4.5.4 训练与推理流程
+训练与推理共用同一份字段定义，但输入来源和输出用途不同。先通过 20-step 冒烟训练确认数据与模型能跑通，再执行 20K 正式训练，下载 checkpoint/020000 并完成真机复现。对初学者而言，先把这条基线跑通比增加训练步数更重要。
+阶段
+主要操作
+输出/通过条件
+冒烟训练
+steps=20，检查 batch、loss、显存和输出目录
+产生 checkpoint，日志无维度或
+字段错误
+正式训练
+固定 DATA_DIR / MODEL_DIR，后台运行 20K
+日志持续更新，按 save_freq 
+生成 checkpoint
+模型下载
+只下载指定 checkpoint 的 pretrained_model
+本机 config.json 可读取，
+输入/输出均为 7 维
+真机推理
+固定相机、TASK 和控制参数运行 smolvla_fast_live.py
+Camera OK，动作无 NaN，
+过程可急停
+执行原则：首次复现固定使用 checkpoint/020000；CAM_RIGHT、CAM_WRIST、TASK、REPLAN_EVERY、速度与限幅参数保持不变。若结果异常，优先检查数据与执行链路，不要同时改变多个变量。
+4.5.5 结果复现与可视化
+结果复现聚焦 20K 模型。建议在相同相机、方块位置范围和控制参数下至少测试 10 次，逐次记录定位、闭爪、抬升、搬运和放置是否成功，并保存视频、日志与结构化汇总。这样更适合初学者判断问题来自采集、模型还是执行参数。
+评估项
+记录方法
+建议可视化
+定位
+是否到达方块上方、偏差方向
+统计 20K 模型的定位成功率
+抓取
+闭爪时机、抓稳率、掉落阶段
+成功/失败堆叠柱状图
+稳定性
+抖动、停顿、关节或夹爪跳变
+state/action/target 第 7 维时序曲线
+轨迹
+抬升、搬运和放置路径是否一致
+同场景视频并排对比
+泛化
+更换方块位置后是否仍成功
+位置分组成功率表
+results/
+└── 020000/run_001.mp4, run_001.log, summary.csv
+合格标准：能够使用同一套输入与控制参数复现 20K 模型的实机结果；每次试验可追溯到 checkpoint/020000、视频、日志和失败阶段，并能据此决定调参还是补采数据。
+5. 官方平台采集与数据集转换
+5.1 数据采集原则
+要求
+说明
+每条 episode 完整
+从安全初始姿态开始，完成接近、闭爪、抬升、搬运、放置
+失败立即重录
+抓空、掉落、长时间犹豫、碰撞、画面缺失都不保留
+桌面背景稳定
+哑光中灰/浅蓝背景更好，避免强动态反光
+夹爪动作明确
+2.5 cm 硬质方块容错仍较低，闭爪后应短暂停留再垂直抬升
+不要过多静止帧
+动作前后不要录很久等待，否则模型容易学保持不动
+采集数据集时注意事项：
+
+
+5.2 2.5 cm 方块正式数据集
+数据集
+episodes
+frames
+FPS
+说明
+2.5 cm 彩色方块
+（正式主线）
+150
+49178
+30
+采用更规范的完整 episode 重新采集，20K 训练后真机抓取成功。早期 2.0 cm 数据的训练与推理未成功，仅用于复盘采集规范，不用于比较尺寸优劣。
+5.3 转换产物位置
+/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1
+/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA
+注意：官方平台显示“转换成功”只说明生成了 LeRobot 格式文件，不代表 state/action 维度一定适合 SmolVLA。必须继续检查 meta/info.json 和 parquet。
+6. 14 维到 7 维数据清洗与质量检查
+6.1 检查 info.json
+DATA=&quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1&quot;
+python3 - &lt;&lt;&#x27;PY&#x27;
+import json
+p = &quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-CONVERT-v1/meta/info.json&quot;
+with open(p, &quot;r&quot;, encoding=&quot;utf-8&quot;) as f:
+    x = json.load(f)
+print(&quot;episodes:&quot;, x[&quot;total_episodes&quot;])
+print(&quot;frames:&quot;, x[&quot;total_frames&quot;])
+print(&quot;fps:&quot;, x[&quot;fps&quot;])
+print(&quot;state:&quot;, x[&quot;features&quot;][&quot;observation.state&quot;][&quot;shape&quot;])
+print(&quot;action:&quot;, x[&quot;features&quot;][&quot;action&quot;][&quot;shape&quot;])
+for k in x[&quot;features&quot;]:
+    if k.startswith(&quot;observation.images.&quot;):
+        print(&quot;camera:&quot;, k)
+PY
+6.2 判断有效 7 维在左侧还是右侧
+本项目遇到过两种 14 维模板：一种是前 7 维有效、后 7 维 None；另一种是前 7 维 None、后 7 维有效。不能直接写死取前 7 维，应先统计。
+情况
+含义
+处理
+左7维有效，右7维全 None
+有效 Alicia-M 数据在 0~6
+裁剪 row[:7]
+左7维全 None，右7维有效
+有效 Alicia-M 数据在 7~13
+裁剪 row[7:14]
+两侧都有值或有部分 None
+数据映射异常或采集错误
+停止训练，检查转换器
+与原始数据
+6.3 生成 7 维 SMOLVLA 数据集
+清洗脚本需要完成四件事：
+①复制原数据集、
+②把 parquet 中 observation.state/action 改为 7 维 list&lt;float32&gt;、
+③更新 meta/info.json、
+④重算 meta/stats.json。
+清洗后最终应看到 state=[7]、action=[7]、相机键仍为 observation.images.cam_right 与 observation.images.cam_wrist。
+合格标准：parquet 总行数与 meta/info.json total_frames 一致；所有 state/action 行长度为 7 且无 None/NaN；tasks.parquet 的任务文本与推理 TASK 保持一致。
+7. 上传服务器与训练环境确认
+7.1 rsync 上传数据集
+rsync -avh --info=progress2 \
+  -e &quot;ssh -p 6034&quot; \
+  &quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA/&quot; \
+  root@192.0.2.10:/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA/
+7.2 服务器检查数据集
+ssh root@192.0.2.10 -p 6034
+source /workspace/miniforge3/etc/profile.d/conda.sh
+conda activate smolvla
+
+du -sh /workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA
+find /workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA -maxdepth 3 -type f | sort
+find /workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA/videos -type f -name &quot;*.mp4&quot;
+7.3 GPU 与缓存检查
+nvidia-smi
+python - &lt;&lt;&#x27;PY&#x27;
+import torch
+print(torch.__version__)
+print(torch.cuda.is_available())
+print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else &quot;NO GPU&quot;)
+PY
+
+find /workspace/smolvla/hf_cache -maxdepth 3 -type d \
+  -name &#x27;models--HuggingFaceTB--SmolVLM2-500M-Video-Instruct&#x27; 2&gt;/dev/null
+NVML Unknown Error：如果 nvidia-smi 报 Failed to initialize NVML 且 torch.cuda.is_available() 为 False，通常是容器失去 GPU 访问；重新安装 PyTorch 无法解决，需要重启/重新挂载 GPU 容器并确认 /workspace 数据保留。
+8. SmolVLA 训练、日志和 checkpoint 管理
+8.1 20-step 冒烟训练
+cd /workspace/smolvla/src/lerobot
+DATA_DIR=/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA
+MODEL_DIR=/workspace/smolvla/models/smolvla_base_alicia_2cam
+SMOKE_OUT=/workspace/smolvla/outputs/pick_2_5b_smoke20
+rm -rf &quot;$SMOKE_OUT&quot;
+
+export HF_HOME=/workspace/smolvla/hf_cache
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+
+lerobot-train \
+  --policy.path=&quot;$MODEL_DIR&quot; \
+  --dataset.repo_id=&quot;local/pick_2_5b_smolvla&quot; \
+  --dataset.root=&quot;$DATA_DIR&quot; \
+  --rename_map=&#x27;{&quot;observation.images.cam_right&quot;:&quot;observation.images.camera1&quot;,&quot;observation.images.cam_wrist&quot;:&quot;observation.images.camera2&quot;}&#x27; \
+  --batch_size=4 \
+  --steps=20 \
+  --output_dir=&quot;$SMOKE_OUT&quot; \
+  --job_name=&quot;pick_2_5b_smoke20&quot; \
+  --policy.device=cuda \
+  --policy.push_to_hub=false \
+  --wandb.enable=false \
+  --save_checkpoint=true \
+  --save_freq=20 \
+  --log_freq=1
+8.2 从头训练 20K
+本手册以 20K 作为正式训练终点。规范采集的 2.5 cm 方块数据在 20K 后已经能够完成真机抓取；既有长时间训练实验出现了部分过拟合，因此 100K 不再作为本手册的操作路线。初学者应先稳定复现 checkpoint/020000，再根据新增数据和实机失败类型决定是否继续训练。
+cd /workspace/smolvla/src/lerobot
+DATA_DIR=/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA
+MODEL_DIR=/workspace/smolvla/models/smolvla_base_alicia_2cam
+OUT_DIR=/workspace/smolvla/outputs/pick_2_5b_smolvla_20k
+LOG_DIR=/workspace/smolvla/logs
+LOG_FILE=$LOG_DIR/pick_2_5b_smolvla_20k.log
+PID_FILE=$LOG_DIR/pick_2_5b_smolvla_20k.pid
+mkdir -p &quot;$LOG_DIR&quot;
+rm -rf &quot;$OUT_DIR&quot;
+
+export HF_HOME=/workspace/smolvla/hf_cache
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+
+nohup /workspace/miniforge3/envs/smolvla/bin/lerobot-train \
+  --policy.path=&quot;$MODEL_DIR&quot; \
+  --dataset.repo_id=&quot;local/pick_2_5b_smolvla_20k&quot; \
+  --dataset.root=&quot;$DATA_DIR&quot; \
+  --rename_map=&#x27;{&quot;observation.images.cam_right&quot;:&quot;observation.images.camera1&quot;,&quot;observation.images.cam_wrist&quot;:&quot;observation.images.camera2&quot;}&#x27; \
+  --batch_size=4 \
+  --steps=20000 \
+  --output_dir=&quot;$OUT_DIR&quot; \
+  --job_name=&quot;pick_2_5b_smolvla_20k&quot; \
+  --policy.device=cuda \
+  --policy.push_to_hub=false \
+  --wandb.enable=false \
+  --save_checkpoint=true \
+  --save_freq=10000 \
+  --log_freq=10 \
+  &gt; &quot;$LOG_FILE&quot; 2&gt;&amp;1 &lt; /dev/null &amp;
+
+echo $! &gt; &quot;$PID_FILE&quot;
+8.3 训练监控
+tail -f /workspace/smolvla/logs/pick_2_5b_smolvla_20k.log
+ps -fp $(cat /workspace/smolvla/logs/pick_2_5b_smolvla_20k.pid)
+watch -n 2 nvidia-smi
+日志字段
+含义
+step
+参数更新步数；20K 表示 20000 步
+smpl
+累计训练样本数，约为 step × batch_size
+epch
+相当于遍历数据集的轮数
+loss
+动作预测误差，不能单独代表实机成功率
+grdn
+梯度范数，观察是否异常
+lr
+学习率；在 20K 训练期间观察变化是否符合当前配置
+mem_gb
+训练显存占用；占不满 4090 不代表训练无效
+8.4 20K checkpoint 目录
+find /workspace/smolvla/outputs/pick_2_5b_smolvla_20k/checkpoints \
+  -maxdepth 2 -type d | sort
+本手册主线推理使用 checkpoints/020000/pretrained_model；training_state 仅用于续训。下载到本机时只需复制 020000 下的 pretrained_model。
+9. 模型下载与本机推理
+9.1 下载 20K checkpoint
+mkdir -p &quot;$HOME/smolvla/models/pick_2.5b_20k&quot;
+rsync -avh --info=progress2 \
+  -e &quot;ssh -p 6034&quot; \
+  root@192.0.2.10:/workspace/smolvla/outputs/pick_2_5b_smolvla_20k/checkpoints/020000/pretrained_model/ \
+  &quot;$HOME/smolvla/models/pick_2.5b_20k/&quot;
+9.2 检查模型结构
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer
+python - &lt;&lt;&#x27;PY&#x27;
+import json
+p = &quot;/home/labuser/smolvla/models/pick_2.5b_20k/config.json&quot;
+with open(p) as f:
+    x = json.load(f)
+print(&quot;input_features:&quot;)
+for k,v in x[&quot;input_features&quot;].items(): print(k, v)
+print(&quot;output_features:&quot;)
+for k,v in x[&quot;output_features&quot;].items(): print(k, v)
+print(&quot;chunk_size:&quot;, x.get(&quot;chunk_size&quot;))
+print(&quot;n_action_steps:&quot;, x.get(&quot;n_action_steps&quot;))
+print(&quot;empty_cameras:&quot;, x.get(&quot;empty_cameras&quot;))
+PY
+9.3 实机推理命令
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy
+
+HF_HUB_OFFLINE=1 \
+TRANSFORMERS_OFFLINE=1 \
+MODEL_DIR=&quot;$HOME/smolvla/models/pick_2.5b_20k&quot; \
+TASK=&quot;pick 2.5b&quot; \
+CAM_RIGHT=/dev/video4 \
+CAM_WRIST=/dev/video10 \
+ACTION_MODE=absolute \
+REPLAN_EVERY=0 \
+MAX_STEPS=1000 \
+MAX_JOINT_STEP=0.02 \
+JOINT_SPEED=7 \
+GRIPPER_SPEED=30 \
+CONTROL_HZ=30 \
+LOG_EVERY=10 \
+python ~/smolvla/inference/smolvla_fast_live.py
+代理问题：若报 Unknown scheme for proxy URL socks://127.0.0.1:7897，先 unset 代理并打开 HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE。QFontDatabase 字体警告不影响推理。
+10. 动作顺滑、速度和夹爪参数调节
+参数
+主要作用
+建议
+REPLAN_EVERY
+动作块重规划频率；过小会频繁推理停顿
+先用 0，即完整执行 50 步
+MAX_JOINT_STEP
+每个控制周期关节目标最大变化
+0.015 更柔，0.02 更快，0.03 更激进
+JOINT_SPEED
+底层机械臂追踪目标速度
+5 稳定，7/8 更快但可能更冲
+GRIPPER_SPEED
+夹爪开合速度
+夹爪闭合慢再从 30 提到 40/50
+CONTROL_HZ
+控制循环频率
+保持 30，与数据 FPS 一致
+ACTION_MODE
+absolute/delta 动作解释
+本项目保持 absolute
+调参原则：想更顺，先降 MAX_JOINT_STEP 或降低 JOINT_SPEED；想更快，先提升 JOINT_SPEED，再小幅提升 MAX_JOINT_STEP。首次复现应保持 20K 模型不变，每次只调整一个控制参数并记录结果。
+10.1 推荐对比档位
+目标
+参数组合
+稳定基线
+MAX_JOINT_STEP=0.02, JOINT_SPEED=7
+更柔和
+MAX_JOINT_STEP=0.015, JOINT_SPEED=5
+更快但仍较稳
+MAX_JOINT_STEP=0.015, JOINT_SPEED=7/8
+更快测试
+MAX_JOINT_STEP=0.018~0.02, JOINT_SPEED=8
+11. 失败分析、补采策略与数据迭代
+11.1 失败阶段记录表
+阶段
+记录内容
+可能原因
+优先处理
+寻找
+是否朝方块方向移动
+相机错位、数据覆盖不足
+检查 CAM_RIGHT/CAM_WRIST 
+与任务文本
+接近
+是否到方块上方
+训练位置单一或目标过小
+补采不同位置、不同起始姿态
+夹取
+夹爪是否主动闭合
+gripper action 学得少或时机错
+LOG_EVERY=1 分析 action[6]，
+补采闭合示范
+抬升
+夹住后是否掉落
+硬质方块抖动、夹持不足
+闭爪后短暂停留，
+垂直抬升再横移
+搬运
+路径是否抖或偏离
+动作块执行不稳或安全限幅
+调整速度/步长，
+补采稳定运输
+放置
+是否到圆盘并松爪
+圆盘位置覆盖不足
+补采不同圆盘位置和松爪时机
+11.2 大批量数据采集建议
+如果桌面放 10 个小方块，不建议把连续抓 10 个记录为一个超长 episode。更推荐每个 episode 对应一次完整抓取，场景里可以有干扰物，但每条只抓一个明确目标。这样 200 轮 × 10 个目标可形成约 2000 条独立抓取示范，显著增加闭夹爪与稳定抬升样本。
+做法
+优点
+风险
+200 个超长 episode，每条抓 10 个
+看似采集省事
+模型需要记住第几个目标，
+多解性强，长时序难学
+约 2000 个短 episode，每条抓 1 个
+任务边界清晰，夹爪事件多，
+适合单次 pick-and-place
+采集管理更麻烦，但训练更稳定
+采集质量比盲目增加训练步数更重要：规范采集后，20K 模型已经能完成 2.5 cm 方块的抓取与放置。若闭爪、抓稳或抬升仍不稳定，应优先补充相应阶段的高质量示范，而不是直接延长训练。
+12. 常见问题与故障排查
+现象
+原因
+处理
+QFontDatabase 警告
+OpenCV Qt 窗口找不到字体目录
+忽略，不影响模型/相机/机械臂
+Unknown scheme for proxy URL socks://127.0.0.1:7897
+代理变量被 httpx 读取
+且格式不兼容
+unset 所有 proxy，设置 HF_HUB_OFFLINE=1
+LocalEntryNotFoundError 
+离线找不到 SmolVLM2
+未设置 HF_HOME 或
+缓存路径不对
+export HF_HOME=/workspace/smolvla/hf_cache
+Feature mismatch：camera3/empty_camera
+加载了错误模型或
+验证 raw observation 太严格
+检查 MODEL_DIR/config.json；
+不要用旧 pretrained_model
+state/action 为 14 维
+平台转换用双臂模板
+检查有效侧后裁剪为 7 维并重算 stats
+腕部相机平台不显示
+平台枚举节点或格式问题
+用 v4l2-ctl 和 check_cameras.py 
+确认真实节点
+NVML Unknown Error
+容器失去 GPU 访问
+重启/重新挂载 GPU 容器，
+不要重装 PyTorch
+Output directory already exists
+LeRobot 默认不覆盖
+已有输出目录
+换 OUT_DIR 或 rm -rf 旧目录后从头训练
+机械臂一卡一卡
+频繁重规划或同步推理造成停顿
+REPLAN_EVERY=0；
+必要时改异步 action buffer
+到方块但不夹
+模型 action[6] 没学好或
+夹爪执行慢
+LOG_EVERY=1 分析
+ state/action/target 第 7 维
+附录 A. 最短命令速查
+A.1 本机检测相机
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate smolvla_infer
+v4l2-ctl --list-devices
+python ~/smolvla/tools/check_cameras.py
+A.2 上传 7 维数据集
+rsync -avh --info=progress2 -e &quot;ssh -p 6034&quot; \
+  &quot;/home/labuser/pick_dataset/pick_2.5b/pick_2.5b-LEROBOT-SMOLVLA/&quot; \
+  root@192.0.2.10:/workspace/smolvla/data/pick_2.5b-LEROBOT-SMOLVLA/
+A.3 服务器查看训练日志
+tail -f /workspace/smolvla/logs/pick_2_5b_smolvla_20k.log
+ps -fp $(cat /workspace/smolvla/logs/pick_2_5b_smolvla_20k.pid)
+nvidia-smi
+A.4 本机推理
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+MODEL_DIR=&quot;$HOME/smolvla/models/pick_2.5b_20k&quot; \
+TASK=&quot;pick 2.5b&quot; \
+CAM_RIGHT=/dev/video4 \
+CAM_WRIST=/dev/video10 \
+ACTION_MODE=absolute \
+REPLAN_EVERY=0 \
+MAX_STEPS=1000 \
+MAX_JOINT_STEP=0.02 \
+JOINT_SPEED=7 \
+GRIPPER_SPEED=30 \
+CONTROL_HZ=30 \
+LOG_EVERY=10 \
+python ~/smolvla/inference/smolvla_fast_live.py" data-category="机械臂与模仿学习"><div><h3><a href="guides/smolvla.html">Alicia-M：SmolVLA 复现与部署 <span aria-hidden="true">→</span></a></h3><p>双相机采集、7 维数据清洗、20K 训练、模型下载与闭环推理。</p></div><div class="resource-card-side"><span class="type-badge">复现手册</span><span>机械臂与模仿学习</span></div></article><article class="resource-card" data-searchable="π0：OpenPI、LIBERO 与真实机械臂复现 机械臂与模仿学习 OpenPI 环境、LIBERO 基准、自定义数据微调与 Policy Server 部署。 π0 pi0 OpenPI LIBERO VLA π0模型原理与复现实训
+面向 OpenPI、LIBERO 与Alicia-M真实机械臂部署的复现指导
+摘要
+本章面向希望完成 π0 视觉—语言—动作（Vision-Language-Action, VLA）模型复现的学习者，采用“模型理解—标准基准复现—自定义数据微调—真实机器人部署—结果验证与排错”的操作链组织内容。
+在标准复现部分，本章以 LIBERO 为基准，说明数据转换、规范化统计量计算、π0 全参数与 LoRA 配置、训练启动、W&amp;B 监控、Policy Server 部署及仿真闭环评测流程；在自定义数据部分，进一步说明如何将同一套流程迁移到新的机器人和任务。最后给出真实机器人远程推理架构、Action Chunk 执行策略、训练—推理一致性检查以及按“数据字段与动作空间→模型输出→归一化/反归一化→执行端控制→真实表现”组织的故障排查方法。读者完成本章后，应能够独立判断“环境是否复现成功、模型是否训练正常、机器人失败发生在哪一层”。
+复现路线图与完成标准
+阶段
+完成标准
+若失败优先检查
+A 环境复现
+openpi 可导入；预训练模型可完成一次 dummy inference
+依赖、权重、GPU/JAX
+B LIBERO 推理
+官方/指定 checkpoint 能在 LIBERO 启动闭环评测
+MuJoCo、Policy Server、观测字段
+C LIBERO 微调
+norm stats 计算成功；训练 loss/grad_norm 正常；可加载中间 checkpoint
+数据转换、config、freeze_filter、显存
+D 自定义数据微调
+自定义 LeRobot 数据可被训练脚本读取并生成有效 checkpoint
+字段映射、任务文本、state/action 维度
+E 真实机器人部署
+服务器产生动作块；客户端安全、连续执行
+动作空间、反归一化、控制频率、通信
+F 结果验证
+有可重复的成功率/失败类型记录，能定位主要误差来源
+实验协议、日志与视频对齐
+π0 模型概述
+π0 是 Physical Intelligence 提出的通用机器人视觉—语言—动作模型。其设计目标不是为某个单一任务训练一个专用策略，而是利用视觉语言模型从互联网规模预训练中获得语义知识，再通过大规模、多机器人、多任务操作数据学习连续控制能力。原始论文将 π0 描述为构建在预训练 VLM 之上的 flow-matching VLA，并通过专门的动作专家输出连续低层控制命令。
+π0 的基本思想
+传统视觉语言模型擅长回答“画面中是什么、用户想做什么”，但输出通常是离散文本 token；机器人控制则要求高频、连续、具有时间相关性的动作。π0 的核心思想是在保留 VLM 视觉—语言理解能力的同时，引入面向机器人状态和连续动作的“动作专家”，并采用流匹配将随机动作逐步变换为可执行动作序列。
+(Iₜ, L, qₜ)  →  π₀  →  Aₜ:ₜ₊H₋₁
+其中 Iₜ 表示一个或多个相机图像，L 表示自然语言指令，qₜ 表示机器人本体状态，Aₜ:ₜ₊H₋₁ 表示未来 H 个时刻的 Action Chunk。对复现者而言，最重要的不是记住网络参数量，而是建立三层认识：第一层是“语义条件”（图像、语言）；第二层是“机器人条件”（state）；第三层是“连续动作生成”（flow matching + action expert）。
+1.2 模型输入与输出
+变量
+含义
+复现时的检查重点
+Iₜ
+多视角 RGB 图像
+相机名称、顺序、尺寸、颜色通道、数据类型和数值范围、归一化处理一致
+L / prompt
+自然语言任务指令
+训练 task 字段是否进入 prompt；训练/推理用词是否一致
+qₜ / state
+机器人本体状态
+维度、关节顺序、夹爪范围、单位、归一化统计量
+A
+动作序列
+关节/末端空间，absolute/relative/delta，夹爪定义，动作维度
+H
+Action Horizon
+一次预测多少步；训练、配置和执行策略必须对应
+1.3 模型整体结构
+
+图 1  π0 核心结构与信息流示意
+π0 沿用 PaliGemma 的视觉语言设计，并增加机器人状态、带噪动作及流时间步的输入投影。图像和语言 token 路由到较大的 VLM 主干；机器人 state 与带噪动作 token 路由到较小的动作专家。原始论文中 VLM 基于 Gemma 2B，动作专家宽度更小，参数量约 300M；两组专家主要通过 Transformer 自注意力交互。
+原始论文还采用分块因果注意力：图像与语言为第一块，机器人状态为第二块，带噪动作序列为第三块。动作 token 可以读取前面的视觉、语言和状态信息，而视觉语言 token 不反向读取后加入的机器人 token。这样既减少对 VLM 预训练分布的扰动，也使部分键值可以在流匹配采样时缓存。对复现而言，这解释了为什么“视觉语言主干正常”并不等于“动作输出正确”：动作专家、state 投影、动作归一化和采样过程仍然可能单独出错。
+1.4 流匹配动作生成原理
+训练时，设真实动作块为 A¹，随机噪声为 A⁰（通常由高斯分布采样），在随机时间 τ∈[0,1] 上构造中间动作：
+Aᵗᵃᵘ = (1 − τ)A⁰ + τA¹
+在线性路径下，目标速度方向可写为：
+v* = A¹ − A⁰
+模型根据当前视觉、语言、机器人状态、中间动作与时间 τ 预测速度场 vθ，并最小化预测速度和目标速度的差异：
+L_FM = E[ || vθ(Aᵗᵃᵘ, τ, Iₜ, L, qₜ) − (A¹ − A⁰) ||² ]
+推理时从随机动作开始，反复调用动作专家并用数值积分更新动作状态，最终得到动作块。直观理解是：模型不是“一次直接回归正确动作”，而是学习“当前这段带噪动作应该朝哪个方向修正”。因此推理涉及多次网络前向，推理步数会同时影响延迟和动作质量。
+π0 复现环境与数据准备
+这一节的目标是把“模型能不能跑”和“数据对不对”分开验证。建议先完成官方环境和预训练权重推理，再接入 LIBERO 或自定义数据。这样当后续训练失败时，可以排除大量基础依赖问题。
+软件与硬件环境配置
+截至 2026 年 8 月，OpenPI 官方仓库仍以 Linux/NVIDIA GPU 为主要运行环境，README 标注的单卡显存参考为：推理大于 8 GB、LoRA 微调大于 22.5 GB、全参数微调大于 70 GB；官方测试系统为 Ubuntu 22.04。
+OpenPI 安装与预训练模型准备
+官方推荐使用带子模块的方式克隆仓库，并通过 uv 安装依赖。先完成以下基础安装：
+git clone --recurse-submodules git@github.com:Physical-Intelligence/openpi.git
+cd openpi
+
+# 若已经克隆过但没有子模块
+git submodule update --init --recursive
+
+GIT_LFS_SKIP_SMUDGE=1 uv sync
+GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
+π0 基础权重可由 OpenPI 自动从官方资产位置下载并缓存。当前仓库列出的 π0 基础 checkpoint 为 gs://openpi-assets/checkpoints/pi0_base。为保证复现可追踪，建议在第一次训练前记录：代码 commit、config 名称、权重来源、数据集版本、GPU 型号和 W&amp;B run id。
+数据集格式与字段说明
+OpenPI 的常规微调示例使用 LeRobot 数据格式，并通过 DataConfig 完成原始字段到模型输入的映射。对任何自定义数据集，最低需要明确四类信息：视觉观测、机器人状态、动作和任务语言。
+数据项
+常见字段示例
+必须确认
+视觉
+observation.images.*
+相机名称是否与 DataConfig 的 repack/transforms 对齐
+状态
+observation.state
+维度、单位、关节顺序、夹爪状态
+动作
+action
+动作空间、维度、是否 delta/absolute、执行语义
+语言
+task → prompt
+每个 episode/task 标签是否正确；prompt_from_task 是否开启
+元数据
+episode/frame/timestamp/fps
+轨迹边界、帧率、视频与状态同步
+数据检查应优先做“结构检查”而非立刻训练。建议随机抽取若干 episode，逐帧查看图像、state、action、task；再计算每维动作的最小值、最大值、分位数和相邻帧差值。若动作字段本身错误，任何学习率调参都无法修复。
+状态、动作与归一化处理
+真实机器人复现中最常见的灾难性错误来自动作定义不一致。建议在训练前用一张“动作契约表”固定以下内容，并在推理客户端再次逐项核对。
+检查项
+训练数据
+模型输出/服务端
+机器人执行端
+动作空间
+关节 / 末端
+必须与训练 config 一致
+控制接口接受哪一种
+表示方式
+absolute / relative / delta
+是否有额外 delta transform
+是否再次累加/转换
+维度与顺序
+例如 7 维
+padding 前后真实有效维度
+电机/关节映射顺序
+夹爪
+范围与开合方向
+归一化后的语义
+实际控制范围
+归一化
+训练 norm_stats
+服务端归一化/反归一化位置
+不要重复反归一化
+时间
+数据 FPS / chunk
+action_horizon
+客户端执行频率与每次执行步数
+OpenPI 在正式训练前要求计算 normalization statistics。官方 README 的通用流程是用训练 config 运行 scripts/compute_norm_stats.py，然后再启动训练。 如果是在预训练中已经出现过的机器人平台上继续微调，官方也提供复用预训练 norm stats 的机制；是否复用取决于动作定义是否完全一致。
+uv run scripts/compute_norm_stats.py --config-name &lt;your_config_name&gt;
+排错顺序：发现机械臂动作很小、抖动或跳变时，优先按“动作空间和字段 → 模型输出 → 归一化/反归一化 → 执行命令 → 实际机械臂”排查。
+LIBERO 基准复现
+LIBERO 的作用是提供一个可控、可重复、与真实机器人硬件无关的标准测试点。完成 LIBERO 复现后，可以确认 OpenPI 环境、模型加载、观测构造、Action Chunk 和闭环推理链基本正常；若之后真实机器人失败，问题范围就更集中在自定义数据、动作转换和硬件执行。
+LIBERO 基准与任务体系
+LIBERO 是面向机器人操作知识迁移和终身学习的基准，共构建 130 个任务，包含 LIBERO-Spatial、LIBERO-Object、LIBERO-Goal 和 LIBERO-10 等任务套件。
+套件
+主要变化因素
+复现时关注
+LIBERO-Spatial
+空间关系变化
+模型是否理解位置/关系条件
+LIBERO-Object
+操作对象变化
+视觉目标识别与对象条件
+LIBERO-Goal
+目标语义变化
+语言指令与任务目标
+LIBERO-10
+综合任务子集
+多任务总体泛化与闭环成功率
+重要区分：当前 OpenPI 的 LIBERO README 公开给出的高成功率参考结果是 π0.5 @ 30k，而不是 π0。本章使用 LIBERO 的主要目的，是复现流程与评测协议；若复现 π0，应使用 π0 对应 config 和 checkpoint，不要把 π0.5 数值当作 π0 的目标值。
+LIBERO 环境与数据集配置
+OpenPI 官方 LIBERO 示例依赖仓库子模块，并推荐通过 Docker 运行评测，因为 Docker 能统一 MuJoCo、OpenGL/EGL 和客户端环境，也可以使用独立的Conda环境运行LIBERO仿真客户端，同时在OpenPI环境中运行Policy Server。
+# 确保子模块完整
+git submodule update --init --recursive
+
+# Docker 方式（官方推荐）
+sudo xhost +local:docker
+SERVER_ARGS=&quot;--env LIBERO&quot; docker compose -f examples/libero/compose.yml up --build
+
+# 若 EGL 报错，可尝试 GLX
+MUJOCO_GL=glx SERVER_ARGS=&quot;--env LIBERO&quot;   docker compose -f examples/libero/compose.yml up --build
+如果目的是训练 π0，而不是只运行现成 checkpoint，可以直接使用 OpenPI 提供的预转换数据集 physical-intelligence/libero；也可以把原始 LIBERO 数据转换为 LeRobot 格式，以学习自定义数据转换流程：
+uv run examples/libero/convert_libero_data_to_lerobot.py   --data_dir /path/to/your/libero/data
+LIBERO 数据预处理
+当前 OpenPI 中的 LeRobotLiberoDataConfig 负责将 LeRobot 原始字段转换为 π0 所需的输入/输出，并可配置 prompt_from_task 和额外的 delta action 变换。官方 π0 LIBERO config 使用 prompt_from_task=True，并在 π0 示例中启用 extra_delta_transform=True。
+data = LeRobotLiberoDataConfig(
+    repo_id=&quot;physical-intelligence/libero&quot;,
+    base_config=DataConfig(prompt_from_task=True),
+    extra_delta_transform=True,
+)
+这里的 extra_delta_transform 是“数据适配的一部分”，不是所有机器人都应开启。迁移到自定义数据时必须先回答：数据中的 action 已经是什么定义？若已经是期望的 delta action，再额外做一次差分会导致动作幅度和语义错误。完成上述数据变换后，在正式训练前应进行以下数据验收检查：
+1. 用数据可视化或统计脚本确认输入图像、state、action 和 task 可以逐 episode 对齐。
+2. 确认 action_dim 与 config 真实有效维度一致；若模型有 padding 维度，区分“模型最大维度”和“机器人实际维度”。
+3. 计算 norm stats，并检查每个动作维度的 q01/q99 或均值方差是否合理。
+4. 随机抽样训练 batch，确认 prompt 不是空字符串，Action Chunk 不跨越错误 episode 边界。
+π0 在 LIBERO 上的微调配置
+OpenPI 当前提供 π0 全参数和低显存 LoRA 两类 LIBERO 示例。用于复现 LoRA 时，可从官方 pi0_libero_low_mem_finetune 配置起步；该配置使用 π0 base、gemma_2b_lora 与 gemma_300m_lora，并通过 get_freeze_filter() 冻结非 LoRA 权重，同时关闭 EMA。
+TrainConfig(
+    name=&quot;pi0_libero_low_mem_finetune&quot;,
+    model=Pi0Config(
+        paligemma_variant=&quot;gemma_2b_lora&quot;,
+        action_expert_variant=&quot;gemma_300m_lora&quot;,
+    ),
+    data=LeRobotLiberoDataConfig(
+        repo_id=&quot;physical-intelligence/libero&quot;,
+        base_config=DataConfig(prompt_from_task=True),
+        extra_delta_transform=True,
+    ),
+    weight_loader=CheckpointWeightLoader(
+        &quot;gs://openpi-assets/checkpoints/pi0_base/params&quot;
+    ),
+    num_train_steps=30_000,
+    freeze_filter=Pi0Config(
+        paligemma_variant=&quot;gemma_2b_lora&quot;,
+        action_expert_variant=&quot;gemma_300m_lora&quot;,
+    ).get_freeze_filter(),
+    ema_decay=None,
+)
+以上代码是“理解结构的简化摘录”，实际使用时应以当前 src/openpi/training/config.py 为准。复现的第一轮建议尽量不修改官方 config；只有官方基线跑通后，再针对显存、数据规模和任务特性调整 batch size、学习率和训练步数。
+LIBERO 模型训练与监控
+训练前先计算 norm stats，再启动训练。以下命令使用 π0 LoRA 示例配置：
+uv run scripts/compute_norm_stats.py   --config-name pi0_libero_low_mem_finetune
+
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 uv run scripts/train.py pi0_libero_low_mem_finetune   --exp-name=pi0_libero_lora_repro   --overwrite
+OpenPI 会把训练日志输出到终端并把 checkpoint 保存到 checkpoints 目录；启用 W&amp;B 后可查看 loss、grad_norm、param_norm、learning rate 与 GPU 系统指标。判断训练是否正常时，重点看趋势而不是某个孤立数值。
+曲线
+正常现象
+异常提示
+loss
+总体下降，后期波动范围缩小
+持续上升、NaN、长期不降
+grad_norm
+早期较大，后期趋于稳定
+频繁巨大尖峰或长期接近 0
+param_norm
+LoRA 下通常缓慢变化
+突然跳变、持续快速增长
+learning rate
+符合 warmup/decay 预设
+曲线和 config 不一致
+GPU utilization
+训练卡大部分时间有负载
+长期空闲说明数据或同步等待
+不要误判：训练 loss 很低只说明拟合训练目标，不等于 LIBERO success rate 高，更不等于真实机器人复现成功。
+LIBERO 推理与闭环控制
+训练得到 checkpoint 后，可先单独启动 policy server，再由 LIBERO 客户端循环发送观测。服务器默认端口为 8000。
+uv run scripts/serve_policy.py policy:checkpoint   --policy.config=pi0_libero_low_mem_finetune   --policy.dir=checkpoints/pi0_libero_low_mem_finetune/pi0_libero_lora_repro/&lt;checkpoint_step&gt;
+对于 LIBERO 的正式评测，官方更推荐 Docker 化工作流，因为它能同时处理模型服务器和仿真客户端。若加载自定义 checkpoint，可通过 SERVER_ARGS 指定 config 和目录；任务套件通过 CLIENT_ARGS 选择。
+export SERVER_ARGS=&quot;--env LIBERO policy:checkpoint   --policy.config pi0_libero_low_mem_finetune   --policy.dir ./my_custom_checkpoint&quot;
+
+export CLIENT_ARGS=&quot;--args.task-suite-name libero_10&quot;
+
+docker compose -f examples/libero/compose.yml up --build
+闭环执行的核心不是“模型一次把整条轨迹生成完”，而是周期性获取新观测、生成 Action Chunk、执行其中若干步，再重新观测。实际执行多少步取决于环境/客户端设计；若执行过多，策略对新视觉信息的响应会变慢，若每步都重新推理，则计算和通信负担增大。
+LIBERO 评测与结果复现
+LIBERO 的主要指标是任务成功率。复现时至少记录每个 task suite 的成功次数、总 rollout 数、平均成功率、失败任务列表和 checkpoint step。若改变随机种子、任务套件、评测 episode 数或模型版本，应视为不同实验。
+记录项
+示例格式
+代码版本
+openpi commit: &lt;hash&gt;
+模型 config
+pi0_libero_low_mem_finetune
+checkpoint
+step 10000 / 20000 / 30000
+任务套件
+libero_spatial / object / goal / libero_10
+随机种子
+seed = ...
+成功率
+success / total
+失败摘要
+目标选择失败、抓取失败、执行超时等
+当前 OpenPI LIBERO README 给出的公开参考结果为 π0.5 @ 30k：Spatial 98.8、Object 98.2、Goal 98.0、LIBERO-10 92.4，平均 96.85。该结果可用于验证“官方 Docker + checkpoint + 评测脚本”是否工作，但不能作为 π0 模型的直接复现目标。对 π0 应比较相同版本、相同 config、相同 checkpoint 来源下的结果。
+自定义数据 π0 LoRA 微调
+数据契约与目录约定
+类别
+通用表示
+作用
+官方源码
+src/openpi/
+模型、数据加载、变换、训练与服务实现
+官方脚本
+scripts/train.py；scripts/compute_norm_stats.py；scripts/serve_policy.py
+OpenPI 标准训练、统计量和服务入口
+轻量客户端
+packages/openpi-client/
+WebSocket/MessagePack 客户端，不加载 GPU 模型
+训练输出
+checkpoints/&lt;CONFIG_NAME&gt;/&lt;EXPERIMENT_NAME&gt;/&lt;STEP&gt;/
+Orbax Checkpoint；禁止写死某次实验的绝对路径
+数据集
+&lt;DATASET_ROOT&gt;/
+LeRobot 数据，独立于 OpenPI 仓库
+基础参数
+&lt;PI0_BASE_PARAMS&gt;/
+官方 π0 base 的 params 目录
+训练字段
+实测契约
+说明
+observation.images.cam_head
+RGB，固定相机
+对应 observation/image
+observation.images.cam_wrist
+RGB，腕部相机
+对应 observation/wrist_image
+observation.state
+shape=(7,)
+前 6 维为关节弧度，第 7 维为夹爪绝对位置
+actions
+shape=(7,)
+绝对关节目标 + 夹爪绝对目标，不做 delta action
+task / prompt
+任务文本
+训练与推理必须保持语义一致
+先固定数据字段、单位和相机语义，再开始计算统计量或训练。数据可以放在仓库外部；OpenPI 代码、训练产物和数据集不要混写到同一目录。以下路径均相对 &lt;OPENPI_ROOT&gt;，只有 &lt;DATASET_ROOT&gt; 与 &lt;PI0_BASE_PARAMS&gt; 是外部资源。
+数据适配、Prompt 与动作契约
+自定义数据复现前，必须把“数据集字段 → OpenPI 输入字典 → 模型内部表示 → Policy 输出 → 机器人执行”写成唯一的数据契约。多任务训练尤其要锁死 prompt 链：LeRobot 的 task 必须通过 prompt_from_task=True 或等价的自定义 Repack/transform 进入 prompt；训练前随机检查多个 batch，确认 prompt 非空、不同任务的文本可区分，并与图像、state、action 属于同一 episode。
+base_config=DataConfig(prompt_from_task=True)
+
+# 冒烟检查（伪代码）
+assert sample[&quot;prompt&quot;] is not None and len(sample[&quot;prompt&quot;]) &gt; 0
+print(sample[&quot;prompt&quot;], sample[&quot;state&quot;].shape, sample[&quot;actions&quot;].shape)
+动作契约同时需要明确：①关节空间还是末端空间；②absolute/relative/delta；③机器人有效维度与模型 action_dim；④夹爪范围和开合方向；⑤单位和关节顺序；⑥训练/推理是否应用 DeltaActions、AbsoluteActions、Normalize/Unnormalize。只要其中一项在训练端与执行端不一致，即使 loss 很低也可能产生大幅跳变、抖动或目标错误。
+归一化统计与 LoRA 配置
+归一化统计量必须由最终训练数据和最终字段顺序计算。实测脚本默认随机抽取最多 2,000 帧，以 batch size 8 统计 state 与 actions，并写入 assets/&lt;CONFIG_NAME&gt;/&lt;ASSET_ID&gt;/norm_stats.json。若数据分布复杂，可把 max-frames 设为 0 统计全量。
+cd &lt;OPENPI_ROOT&gt;
+export OPENPI_ROOT=&quot;$PWD&quot;
+export ALICIA_DATASET_ROOT=&quot;&lt;DATASET_ROOT&gt;&quot;
+export PI0_BASE_PARAMS=&quot;&lt;PI0_BASE_PARAMS&gt;&quot;
+
+.venv/bin/python scripts/train_pi0_lora_alicia.py               --compute-norm-stats --max-frames 2000
+
+test -f assets/&lt;CONFIG_NAME&gt;/&lt;ASSET_ID&gt;/norm_stats.json
+参数
+实测值
+复现含义
+基础模型
+π0 base
+从官方 base params 初始化
+PaliGemma
+gemma_2b_lora
+视觉语言主干使用 LoRA
+Action Expert
+gemma_300m_lora
+动作专家使用 LoRA
+action horizon
+50
+每次预测 50×7 动作；执行端可只消费前 N 步
+freeze_filter
+由相同 Pi0Config 生成
+冻结非 LoRA 参数，必须与模型 variant 一致
+delta action
+关闭
+Alicia-M 数据使用绝对关节和夹爪目标
+EMA
+关闭
+与实测配置保持一致
+启动训练与多 GPU 配置
+OpenPI TrainConfig.batch_size 表示全局 batch size。多 GPU 时必须能被设备数整除：例如全局 batch_size=16、2 张 GPU 时，每卡有效 batch 为 8；若只使用 1 张 GPU，则每卡 batch 为 16。本文训练示例采用 2 张 GPU，因此同时暴露两张设备并将自定义入口的 fsdp_devices 设置为 2。
+cd &lt;OPENPI_ROOT&gt;
+mkdir -p logs
+CUDA_VISIBLE_DEVICES=&lt;GPU_ID_0&gt;,&lt;GPU_ID_1&gt; \
+nohup .venv/bin/python scripts/train_pi0_lora_alicia.py \
+--fsdp_devices 2 \
+--exp_name &lt;EXPERIMENT_NAME_2GPU&gt; \
+&gt; logs/&lt;TRAIN_LOG&gt;.log 2&gt;&amp;1 &amp;
+训练参数
+推荐值(非最优)
+注意事项
+batch_size
+16（全局）
+OpenPI TrainConfig 定义为 global batch；2 GPU 时每卡 8，1 GPU 时每卡 16
+devices / fsdp_devices
+2
+本手册实测双 GPU；batch_size 必须能被设备数整除
+num_train_steps
+25,000
+JAX 训练 step 从 0 计数，最终 checkpoint 通常为 24,999
+save_interval
+5,000
+建议保留 5k / 10k / 15k / 20k / 24,999，真实效果对比后选部署版本
+optimizer
+AdamW
+显式记录实际 b1/b2/eps/weight_decay；当前 OpenPI 默认 b1=0.9, b2=0.95, eps=1e-8, weight_decay=1e-10
+peak_lr
+1e-5
+本手册小数据 LoRA 的保守复现配置；
+warmup_steps
+500
+前 500 step 线性 warmup 到 peak_lr
+decay_steps
+25,000
+整个 schedule 的目标终点；包含 warmup，不是 warmup 后再额外衰减 25k
+decay_lr
+1e-6
+训练末期最低学习率
+clip_gradient_norm
+1.0
+与当前 OpenPI AdamW 默认梯度裁剪一致
+EMA
+关闭
+LoRA 微调保持 ema_decay=None
+log_interval
+100
+记录 loss、grad_norm、param_norm；learning_rate 若需要必须显式 log
+resume / overwrite
+新训练：False / True；续训：True / False
+续训必须恢复 train_state（optimizer + step），禁止仅加载 params 后重新 warmup
+W&amp;B
+开启
+记录 config、loss/grad_norm/param_norm 与系统指标；JAX 默认入口不保证有 learning_rate 曲线
+开始长训前先完成：数据 schema 检查 → norm_stats 检查 → 单 batch 数据加载 → 模型参数恢复 → 10～100 step 冒烟训练。overwrite=True 会清空同名实验目录，不要复用已有 &lt;EXPERIMENT_NAME&gt;。
+训练监控与实测结果
+本实验使用 Weights &amp; Biases（W&amp;B）记录训练配置、训练曲线和GPU运行状态。训练服务器通过W&amp;B SDK上传监控数据，实验人员可在浏览器中远程查看，无需持续通过SSH执行日志命令。
+监控项
+观察重点
+异常表现
+loss
+整体是否下降并逐渐稳定
+持续上升、剧烈振荡或出现NaN
+grad_norm
+梯度是否处于稳定范围
+突然放大、持续为零或出现NaN
+param_norm
+模型参数规模是否稳定
+突然跳变或持续异常增长
+step
+训练是否持续推进
+长时间停留在同一步
+GPU利用率
+计算资源是否被有效使用
+长期接近零，可能是数据加载或进程异常
+GPU显存
+是否接近显存上限
+持续满载并发生OOM
+camera_views
+两路相机及预处理是否正确
+视角接反、黑屏、颜色异常或尺寸错误
+训练配置
+batch、步数、FSDP和数据配置是否正确
+页面配置与预期实验不一致
+Checkpoint 校验、选择与续训
+推理前应检查目录结构，而不是只检查文件夹是否存在。Orbax Checkpoint 可能把数组分散在多个元数据与数据文件中，不能手工复制单个 manifest 代替整个目录。
+cd &lt;OPENPI_ROOT&gt;
+CKPT=&quot;checkpoints/&lt;CONFIG_NAME&gt;/&lt;EXPERIMENT_NAME&gt;/&lt;STEP&gt;&quot;
+
+test -d &quot;$CKPT/params&quot;
+test -d &quot;$CKPT/train_state&quot;
+test -f &quot;$CKPT/assets/&lt;ASSET_ID&gt;/norm_stats.json&quot;
+test -f &quot;$CKPT/_CHECKPOINT_METADATA&quot;
+du -sh &quot;$CKPT&quot;
+选择 Checkpoint 时同时比较：离线动作分布、关节范围、夹爪闭合时序、短程真机成功率和连续运行稳定性。不要仅按最低训练 loss 自动决定部署版本。
+π0 真实机器人部署
+架构、占位符与所需文件
+占位符
+填写内容
+&lt;TRAIN_SERVER_HOST&gt;
+训练服务器主机名或地址
+&lt;SSH_PORT&gt;
+SSH 监听端口
+&lt;POLICY_SERVER_HOST&gt;
+客户端可访问的策略服务器地址
+&lt;POLICY_SERVER_PORT&gt;
+策略 WebSocket 端口
+&lt;ROBOT_SERIAL_PORT&gt;
+Alicia-M 串口
+&lt;FIXED_CAMERA_SERIAL&gt;
+Orbbec 固定相机序列号
+&lt;WRIST_CAMERA_SERIAL&gt;
+RealSense 腕部相机序列号
+&lt;LOCAL_PROXY_PORT&gt;
+本机代理端口（如有）
+服务端加载模型、归一化统计量并执行 JAX 推理；Windows 客户端采集 Orbbec Gemini 336L 固定视角、Intel RealSense 腕部视角和 Alicia-M 关节状态，通过 OpenPI WebSocket 协议发送 observation，再对返回动作做安全限制和 PV 控制。
+服务端模型加载与启动
+服务端负责加载训练完成的checkpoint、构建推理策略，并通过WebSocket向客户端提供动作预测服务。训练配置、数据变换、归一化统计量和模型结构必须与checkpoint一致。
+如果训练配置已经注册到当前OpenPI版本的全局配置机制中，优先使用官方服务脚本：
+cd &lt;OPENPI_ROOT&gt;
+uv run scripts/serve_policy.py \
+policy:checkpoint \
+--policy.config=&lt;CONFIG_NAME&gt; \
+--policy.dir=checkpoints/&lt;CONFIG_NAME&gt;/&lt;EXPERIMENT_NAME&gt;/&lt;STEP&gt;
+Windows 客户端与双相机输入
+Windows 客户端使用独立 Conda 环境，安装 Alicia-M SDK、Orbbec SDK v2、Intel RealSense SDK、OpenPI 轻量客户端及脚本依赖。
+conda activate &lt;CLIENT_ENV&gt;
+chcp 65001
+$env:PYTHONUTF8 = &quot;1&quot;
+$env:NO_PROXY = &quot;localhost,127.0.0.1,&lt;POLICY_SERVER_HOST&gt;&quot;
+$env:no_proxy = $env:NO_PROXY
+
+Test-NetConnection &lt;POLICY_SERVER_HOST&gt; -Port &lt;POLICY_SERVER_PORT&gt;
+设备
+通用参数
+核验
+Alicia-M
+&lt;ROBOT_SERIAL_PORT&gt;
+串口可打开、固件模式正确、状态连续更新
+固定相机
+Orbbec Gemini 336L；&lt;FIXED_CAMERA_SERIAL&gt;
+原生 SDK 返回任务视角 RGB
+腕部相机
+Intel RealSense；&lt;WRIST_CAMERA_SERIAL&gt;
+pyrealsense2 返回腕部 RGB
+图像
+640×480 @ 30 FPS
+转换为 RGB，再由 OpenPI resize/pad 到模型输入
+状态
+shape=(7,)
+单位、关节顺序和夹爪范围与训练一致
+分阶段联调与安全执行
+阶段
+客户端模式
+通过标准
+网络与元数据
+连接服务，不连接机器人
+能读取 action_dim、单位和观测字段
+离线 probe
+用录制帧推理
+actions.shape与目标一致，数值有限且范围合理
+真机 dry-run
+连接机器人与双相机，不加 --execute
+观测正确、只打印目标不运动
+单步执行
+chunks=1，actions-per-chunk=1
+方向、单位、顺序、限幅正确
+短动作块
+逐步增加 N
+commanded 与 measured 跟踪，急停有效
+连续闭环
+chunks=0
+持续重规划并完成任务，人工全程监护
+python &lt;CLIENT_PROJECT_ROOT&gt;/scripts/alicia_openpi_client.py `
+  --host &lt;POLICY_SERVER_HOST&gt; --port &lt;POLICY_SERVER_PORT&gt; `
+  --prompt &quot;grab and place&quot; `
+  robot --robot-port &lt;ROBOT_SERIAL_PORT&gt; `
+  --camera-backend orbbec-realsense `
+  --orbbec-serial &lt;FIXED_CAMERA_SERIAL&gt; `
+  --realsense-serial &lt;WRIST_CAMERA_SERIAL&gt; `
+  --camera-width 640 --camera-height 480 --fps 30 `
+  --robot-speed 20 --robot-control-mode pv `
+  --max-joint-step-deg 1.5 --max-gripper-step 45 `
+  --chunks 1 --actions-per-chunk 1 --action-hold-sec 0.04 `
+  --execute
+真机执行要求：清空工作空间、降低初始速度、保持急停可达、单人发令、禁止人员进入机械臂运动范围。任何单位、关节顺序、absolute/delta 或相机映射异常都应立即停止。
+复现结果验证与故障排查
+复现的目标不是“训练命令成功退出”，而是形成可重复的证据链。建议把验证分为标准仿真、离线模型输出、真实机器人三个层次，并用同一套日志关联。
+LIBERO 复现结果验证
+LIBERO 结果用于证明标准化闭环链条可运行。至少报告：代码 commit、config、checkpoint、task suite、评测次数、随机种子、成功率和失败类型。若与官方或他人结果差异很大，先确认评测脚本、任务 suite、checkpoint 和环境版本完全相同，再讨论模型本身。
+若只想验证环境，可先使用官方提供的 π0.5-LIBERO checkpoint 运行 Docker 流程，确认仿真与服务器通信；随后再切换到 π0 checkpoint 进行本章的 π0 复现。这样可以把“LIBERO 环境问题”和“π0 训练问题”分离。
+Alicia-M 自定义模型实测验证
+验证顺序为离线 probe、真机 dry-run、单动作、短动作块、连续闭环。
+训练—推理一致性检查
+项目
+训练定义
+推理/执行要求
+固定视觉
+cam_head
+Orbbec 任务视角 → observation/image
+腕部视觉
+cam_wrist
+RealSense 腕部视角 → observation/wrist_image
+状态
+6 关节弧度 + 夹爪
+顺序、单位、符号和范围完全一致
+动作
+7 维绝对目标
+不得重复反归一化或误作 delta
+任务文本
+数据集 task
+prompt 语义保持一致
+时序
+30 FPS，horizon=50
+action-hold 接近采集周期，按 chunk 重规划
+归一化
+Checkpoint assets 中的 norm_stats
+服务必须加载同一份资产
+本章小结
+π0 的复现应被视为一条端到端工程链，而不是单独的“训练脚本复现”。模型层面需要理解 VLM 主干、动作专家、Action Chunk 和流匹配；工程层面需要保证 OpenPI 版本、数据字段、动作空间、norm stats、训练 config、Policy Server 和客户端控制协议一致。LIBERO 为这条链提供标准化中间检查点：先通过标准仿真验证模型与软件，再迁移到自定义数据和真实机器人，可显著降低排错复杂度。
+最终的复现成功应满足三个条件：其一，训练过程可重现，配置、数据版本、日志和 checkpoint 可追溯；其二，推理链可重现，同一 observation 能稳定得到格式与数值合理的 Action Chunk；其三，任务效果可重现，在固定实验协议下获得稳定的成功率并能解释主要失败类型。只有同时满足这三点，才能从“代码能跑”升级为“系统被真正复现”。" data-category="机械臂与模仿学习"><div><h3><a href="guides/pi0.html">π0：OpenPI、LIBERO 与真实机械臂复现 <span aria-hidden="true">→</span></a></h3><p>OpenPI 环境、LIBERO 基准、自定义数据微调与 Policy Server 部署。</p></div><div class="resource-card-side"><span class="type-badge">复现手册</span><span>机械臂与模仿学习</span></div></article><article class="resource-card" data-searchable="Roboto Origin：开发资料与代码入口 机器人平台 硬件、电控、机器人描述、强化学习训练与 ROS 2 部署入口。 RoboParty ROS 2 人形机器人 强化学习  平台与资源结构  Roboto Origin 是 RoboParty 开源的人形机器人项目。资料包括硬件结构、电控固件、机器人描述、强化学习训练和实机部署。实验室设备版本需与实际控制器及关节配置对应。  官方入口    Roboto Origin 总仓库    厂商飞书知识库    训练模块    ROS 2 部署模块    机器人描述与仿真模型    建议的资料阅读顺序   核对设备型号、控制器、驱动器与机器人描述文件。  阅读硬件安装和上电检查说明。  阅读训练环境和策略部署文档，固定使用的代码版本。  记录仿真、策略推理和实机验证的配置差异。   实验室记录待补充  设备负责人、硬件版本、控制电脑环境、已验证的代码提交、验收记录与实机操作规程。  本页提供官方资源索引。厂商飞书知识库正文尚未导入。 " data-category="机器人平台"><div><h3><a href="guides/roboto-guide.html">Roboto Origin：开发资料与代码入口 <span aria-hidden="true">→</span></a></h3><p>硬件、电控、机器人描述、强化学习训练与 ROS 2 部署入口。</p></div><div class="resource-card-side"><span class="type-badge">官方资料</span><span>机器人平台</span></div></article><article class="resource-card" data-searchable="AlohaMini：设备手册入口 机器人平台 厂商飞书手册；设备配置与安装正文待补充。 AlohaMini 设备手册  设备资料入口  AlohaMini 已列入实验室设备目录。当前保留厂商手册入口，设备参数及详细安装过程将在取得正文后补充。   打开 AlohaMini 飞书手册   后续整理内容   设备组成、主机系统和连接方式。  驱动安装、校准和首次运行。  遥操作、数据记录与算法接口。  常见问题、版本对应关系和负责人。   手册可能需要原平台的访问权限。本站不保存访问密码。 " data-category="机器人平台"><div><h3><a href="guides/alohamini-guide.html">AlohaMini：设备手册入口 <span aria-hidden="true">→</span></a></h3><p>厂商飞书手册；设备配置与安装正文待补充。</p></div><div class="resource-card-side"><span class="type-badge">外部手册</span><span>机器人平台</span></div></article><article class="resource-card" data-searchable="EISA-SS：传感器台架使用导读 智能驾驶与车路协同 EISA-SS 配件、传感接口、测试软件与用户手册章节。 EISA-SS 雷达 相机 CAN 组合导航  设备概况  用户手册标注设备为“智能汽车传感与感知系统 EISA-SS”。台架集成多类智能汽车传感器，可移动至室外开展数据采集与测试。    设备用户手册配图   传感器与接口   视觉：双目摄像头、单目摄像头、远红外摄像头与环视系统。  测距：激光雷达、毫米波雷达、超声波雷达。  定位：GNSS / IMU 组合导航与卫星天线。  计算与调试：算法盒子、工控机、CAN 分析仪、示波器和电源。   手册主要章节   产品简介和整体结构。  主要配件与产品参数。  超声波雷达测试软件。  毫米波雷达测试软件。  360°环视摄像头测试软件。  激光雷达测试软件。  仿真模拟软件。   使用前的核对项  将手册中的配件列表与实物逐项对应，确认电源、线束、总线接口和传感器安装位置。具体接线与上电步骤以本机手册和负责人指导为准。  原始资料  资料目录：国汽 / 2、智能传感器技术应用。包含“传感器台架 - 用户手册.docx”、课程资料、厂家手册与配套软件。本页为导读，原始大文件未上传到静态网站。   查看配套课程资源索引  " data-category="智能驾驶与车路协同"><div><h3><a href="guides/sensor-manual.html">EISA-SS：传感器台架使用导读 <span aria-hidden="true">→</span></a></h3><p>EISA-SS 配件、传感接口、测试软件与用户手册章节。</p></div><div class="resource-card-side"><span class="type-badge">设备指南</span><span>智能驾驶与车路协同</span></div></article><article class="resource-card" data-searchable="智能传感器：七个项目课程资源索引 智能驾驶与车路协同 视觉、超声波、毫米波、激光雷达、组合导航与联合标定课程。 环境感知 传感器标定 课程资源  课程结构  课程围绕传感器的认识、通信、数据处理与综合应用展开。     项目  学习内容    项目一  认识智能网联汽车传感器与实训环境搭建    项目二  认识与应用视觉传感器    项目三  认识与应用超声波雷达    项目四  认识与应用毫米波雷达    项目五  认识与应用激光雷达    项目六  认识与应用组合导航    项目七  综合实践：联合标定与交通对象识别     资料类型  目录中包含课件、学生手册、教师手册、工作页、书稿、配套视频及厂家手册。部分文件存在不同修订日期，使用时应核对版本。  配套厂家手册   RS-Helios 16P 激光雷达用户指南。  CGI-210 用户手册。  ESRR / EMRR 数据雷达使用说明。  超声波模块及 ZED 相关资料。   资料位置与获取  原始位置：国汽 / 2、智能传感器技术应用。大文件目前由团队线下保存；可在后续配置团队网盘后，为每个项目补充下载链接。   阅读 EISA-SS 台架导读  " data-category="智能驾驶与车路协同"><div><h3><a href="guides/sensor-courses.html">智能传感器：七个项目课程资源索引 <span aria-hidden="true">→</span></a></h3><p>视觉、超声波、毫米波、激光雷达、组合导航与联合标定课程。</p></div><div class="resource-card-side"><span class="type-badge">课程索引</span><span>智能驾驶与车路协同</span></div></article><article class="resource-card" data-searchable="智能座舱与鸿蒙：开发课程索引 智能驾驶与车路协同 鸿蒙开发、OTA、抬头显示、视觉交互、智能座椅与配套代码。 鸿蒙 座舱 OTA HUD 手势识别  设备与课程对应  国汽文件夹中可以识别出智能座舱系统测试装调台架与鸿蒙座舱开发课程。该资料组与传感器台架分别组织，尚未在目录中找到叉车设备手册。  座舱装调课程   智能座舱认知与实训设备认识。  OTA 系统调试。  抬头显示系统拆装、调试与测试。  视觉与触摸交互、手势识别开发。  智能座椅拆装、调试与测试。   鸿蒙应用与配套资源  鸿蒙台架资料中包含应用开发代码、课件、学生手册及题库，部分项目配套教师版和学生版。文件夹还提供人脸识别、危险驾驶、情绪识别、手势识别及 YOLO / MediaPipe 等资源包。  资料位置与获取  原始目录为“国汽 / 智能座舱系统测试装调台架-课程资源”与“国汽 / 鸿蒙台架”。压缩包体积较大，本网站暂提供目录说明，下载入口待团队确定存储位置后补充。  待补充记录  台架硬件型号、鸿蒙与开发工具版本、实际可运行的代码版本、接线图和设备负责人。 " data-category="智能驾驶与车路协同"><div><h3><a href="guides/cockpit-courses.html">智能座舱与鸿蒙：开发课程索引 <span aria-hidden="true">→</span></a></h3><p>鸿蒙开发、OTA、抬头显示、视觉交互、智能座椅与配套代码。</p></div><div class="resource-card-side"><span class="type-badge">课程索引</span><span>智能驾驶与车路协同</span></div></article><article class="resource-card" data-searchable="自动驾驶开发板：设备与接口导读 智能驾驶与车路协同 传感器、国产 SoC、CAN 与车载以太网接口；依据面板照片整理。 SoC 开发板 CAN Ethernet  实物标识  照片中设备标注为“自动驾驶基础系统开发板”。上盖标示毫米波雷达、高清摄像头与激光雷达，下部包括 MCU、SoC A / B 最小系统、交换机及各类接口。     图示连接关系   毫米波雷达通过 CAN 接入计算平台。  激光雷达通过千兆单对以太网接入，面板标注 1000BASE-T1。  摄像头与计算平台连接，图示包含 MIPI-CSI 等接口。  平台通过车载以太网转换器与笔记本电脑连接。   资料边界  本页根据面板文字和实物照片整理设备构成，不替代接线或供电手册。SoC 具体型号、系统镜像、SDK 和连接步骤待厂家手册补充。 " data-category="智能驾驶与车路协同"><div><h3><a href="guides/driving-board-guide.html">自动驾驶开发板：设备与接口导读 <span aria-hidden="true">→</span></a></h3><p>传感器、国产 SoC、CAN 与车载以太网接口；依据面板照片整理。</p></div><div class="resource-card-side"><span class="type-badge">设备指南</span><span>智能驾驶与车路协同</span></div></article><article class="resource-card" data-searchable="C-V2X：车端与路侧平台资料入口 智能驾驶与车路协同 C-V2X 车载终端、路侧融合平台与开发资料清单。 V2X C-V2X 车路协同 V2I  车载终端实验箱  实物照片显示 C-V2X 车载终端实验箱，配有显示屏、车载终端、USB 和 RJ-45 接口。终端外壳标注“中信科智联”。     路侧配套平台  实验室介绍PPT另列出“V2X移动式智能路侧融合平台”。车端与路侧平台可对应组织车路协同通信、路侧信息融合及协同决策实验。  待补充的开发资料   车载终端和路侧单元的型号、固件版本。  通信环境、网络配置和设备连接说明。  SDK、消息集、数据样例和示例程序。  已验证场景、日志格式和实验负责人。   本页只整理已知设备与资料需求，不代表通信链路已经完成联调。 " data-category="智能驾驶与车路协同"><div><h3><a href="guides/v2x-guide.html">C-V2X：车端与路侧平台资料入口 <span aria-hidden="true">→</span></a></h3><p>C-V2X 车载终端、路侧融合平台与开发资料清单。</p></div><div class="resource-card-side"><span class="type-badge">设备指南</span><span>智能驾驶与车路协同</span></div></article><article class="resource-card" data-searchable="驾驶模拟器与51Sim：实验资料索引 驾驶模拟与人因 两台驾驶模拟器、51Sim 软件、场景配置与实验记录要素。 51Sim 驾驶模拟 场景 接管  现有平台信息  按团队提供的信息，实验室有两台驾驶模拟器，软件为 51Sim。硬件具体型号、供应商及软件版本待核对。    实验室介绍PPT实物照片   实验资料建议结构   平台配置：模拟器编号、软件版本、显示与控制设备。  场景配置：道路、交通参与者、天气与触发事件。  实验协议：任务说明、练习过程、试次顺序和终止条件。  数据记录：车辆状态、操作输入、事件时间戳和日志位置。  同步设备：眼动、脑电及其他生理采集设备。   当前资料状态  目前提供平台说明和整理模板，尚未收到 51Sim 安装包、授权配置、操作手册或具体实验记录。后续可按软件版本和实验任务补充。 " data-category="驾驶模拟与人因"><div><h3><a href="guides/simulator-guide.html">驾驶模拟器与51Sim：实验资料索引 <span aria-hidden="true">→</span></a></h3><p>两台驾驶模拟器、51Sim 软件、场景配置与实验记录要素。</p></div><div class="resource-card-side"><span class="type-badge">实验指南</span><span>驾驶模拟与人因</span></div></article><article class="resource-card" data-searchable="眼动与脑电：多模态实验资料导读 驾驶模拟与人因 眼动、脑电与驾驶数据的设备对应、时间同步及记录要素。 Tobii EEG 眼动 人因  设备对应关系  实验室介绍PPT列出 Tobii Pro Glasses 3 可穿戴眼动系统与 Psytech eego 脑电/生理采集系统，并展示与驾驶模拟器结合的实验场景。     数据类型  平台  研究用途    注视与场景视频  Tobii Pro Glasses 3  视觉注意力与交互评估    脑电与生理信号  Psytech eego  疲劳、注意分散与认知状态    驾驶操作与车辆状态  驾驶模拟器 / 51Sim  驾驶行为、接管与人机共驾     实验记录要素   设备与软件版本、校准结果和采样设置。  统一时间基准及事件标记方式。  实验场景、任务协议与数据命名规则。  缺失、噪声和异常数据的处理记录。   资料状态  以上为依据实验室介绍整理的平台导读。安装、校准、同步和数据处理的详细操作文档待补充。 " data-category="驾驶模拟与人因"><div><h3><a href="guides/human-factors.html">眼动与脑电：多模态实验资料导读 <span aria-hidden="true">→</span></a></h3><p>眼动、脑电与驾驶数据的设备对应、时间同步及记录要素。</p></div><div class="resource-card-side"><span class="type-badge">设备指南</span><span>驾驶模拟与人因</span></div></article><article class="resource-card" data-searchable="研究方向与阶段资料 研究进展 无人导航、驾驶行为、事件视觉、低空物流与机器人协同；资料日期 2026-01。 研究进展 AGV 导航 低空物流  资料时间与范围  本页依据2026年1月15日实验室介绍PPT整理研究主题，不作为当前实验完成状态或最新成果统计。  多源融合导航与无人系统  围绕无人系统的高精度定位与导航，研究多冗余 IMU 融合、视觉惯性里程计和动态特征处理，为复杂物流环境中的移动平台提供方法支撑。  来源：实验室介绍PPT第9页。  多模态驾驶行为与人机共驾  结合驾驶模拟、眼动和脑电平台，研究驾驶意图、认知状态及人机交互，关注自动驾驶接管与系统测试评价。  来源：实验室介绍PPT第5、10页。  低空物流与协同配送  面向动态环境中的多机吊运、空地配送和协同搬运，研究运动规划、避障、姿态队形控制与装备实现。  来源：实验室介绍PPT第12页。  机器人集群与智慧仓储  围绕仓储拣选场景，研究多机器人无冲突路径规划、物流 AGV 协同调度和多车联动作业。  来源：实验室介绍PPT第13—14页。  事件视觉与类脑感知  PPT第11页介绍事件相机辅助无人车导航与动目标检测，关注动态视觉、边缘计算和脉冲神经网络相关研究。  后续进展记录模板  建议每次记录包含：日期、项目、负责人、代码版本、设备与数据、实验条件、结果、失败现象和下一步。当前未提供的实验结果不作推断。 " data-category="研究进展"><div><h3><a href="guides/research-progress.html">研究方向与阶段资料 <span aria-hidden="true">→</span></a></h3><p>无人导航、驾驶行为、事件视觉、低空物流与机器人协同；资料日期 2026-01。</p></div><div class="resource-card-side"><span class="type-badge">研究资料</span><span>研究进展</span></div></article><article class="resource-card" data-searchable="实验平台与设备资料总览 研究进展 按设备定位配套手册、开发指南与课程资料。 设备目录 平台 FR3 POS320  设备与配套资料     设备/平台  类别  文档入口     Roboto Origin 人形机器人   具身智能   Roboto Origin：开发资料与代码入口      AlohaMini 机器人平台   具身智能   AlohaMini：设备手册入口      Alicia-D / Alicia-M 示教与操作平台   具身智能   Alicia-D / M：ACT 模仿学习全流程   Alicia-M：SmolVLA 复现与部署   π0：OpenPI、LIBERO 与真实机械臂复现      Franka Research 3 科研机械臂   具身智能  操作资料待补充     自动驾驶基础系统开发板   智能驾驶   自动驾驶开发板：设备与接口导读      C-V2X 车载终端实验箱   智能驾驶   C-V2X：车端与路侧平台资料入口      智能汽车传感与感知台架   智能驾驶   EISA-SS：传感器台架使用导读   智能传感器：七个项目课程资源索引      智能座舱系统开发测试台架   智能驾驶   智能座舱与鸿蒙：开发课程索引      驾驶模拟器   人因工程   驾驶模拟器与51Sim：实验资料索引      可穿戴式眼动追踪系统   人因工程   眼动与脑电：多模态实验资料导读      高精度脑电与生理信号采集系统   人因工程   眼动与脑电：多模态实验资料导读      高精度定位定姿系统   无人系统  操作资料待补充     移动式智能路侧融合平台   智能驾驶   C-V2X：车端与路侧平台资料入口      嗅觉感知交互科研平台   人因工程  操作资料待补充     低空物流协同实验装备   无人系统   研究方向与阶段资料      无人叉车研究样机   无人系统  操作资料待补充     设备负责人、配置与版本待补充；无人叉车的型号及归属待确认。 " data-category="研究进展"><div><h3><a href="guides/platform-overview.html">实验平台与设备资料总览 <span aria-hidden="true">→</span></a></h3><p>按设备定位配套手册、开发指南与课程资料。</p></div><div class="resource-card-side"><span class="type-badge">平台索引</span><span>研究进展</span></div></article><div class="empty" data-empty hidden>没有匹配的资源。<br><button class="button secondary" data-clear>清除筛选</button></div></div></div></main><footer class="foot"><div class="wrap"><div class="foot-grid"><div><strong>智能物流系统北京市重点实验室</strong><p>北京物资学院 · 计算机与人工智能学院</p></div><div class="foot-links"><a href="../lab/index.html">实验室主页</a><a href="https://www.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学校官网</a><a href="https://xxxy.bwu.edu.cn/" class="" target="_blank" rel="noopener noreferrer">学院官网</a><a href="sources.html">资料来源</a></div></div><div class="foot-bottom"><span>© 2026 智能物流系统北京市重点实验室</span><span>公开访问 · 文档与资料索引</span></div></div></footer></body></html>
